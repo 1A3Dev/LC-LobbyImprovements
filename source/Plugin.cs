@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,7 @@ using HarmonyLib;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
@@ -168,6 +170,35 @@ namespace LobbyImprovements
             }
 
             return true;
+        }
+
+        [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
+        [HarmonyPostfix]
+        private static IEnumerator Postfix(IEnumerator result)
+        {
+            while (result.MoveNext())
+                yield return result.Current;
+
+            LobbySlot[] lobbySlots = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
+            foreach (LobbySlot lobbySlot in lobbySlots)
+            {
+                lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
+
+                // Add the lobby code copy button
+                Button JoinButton = lobbySlot.transform.Find("JoinButton")?.GetComponent<Button>();
+                if (JoinButton && !lobbySlot.transform.Find("CopyCodeButton"))
+                {
+                    LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, lobbySlot.lobbyId.Value.ToString(), ["Copy ID", "Copied", "Invalid"]);
+                }
+
+                // Move the text for challenge moon lobbies
+                if (lobbySlot.thisLobby.GetData("chal") == "t")
+                {
+                    TextMeshProUGUI chalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
+                    if (chalModeText != null)
+                        chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
+                }
+            }
         }
 
         // [Host] Notify the player that they were kicked

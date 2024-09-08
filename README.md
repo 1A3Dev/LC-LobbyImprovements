@@ -13,14 +13,14 @@ This mod adds various features relating to lobbies:
 - LAN Improvements
   - Customisable Port
   - Lobby List
-    - You can directly connect to an IP via the text input above the lobby list (the port is optional and can be specified after a colon for example: 127.0.0.1:7777)
+    - You can directly connect to an IP via the tag input above the lobby list (the port is optional and can be specified after a colon for example: 127.0.0.1:7777)
     - This uses UDP to discover other lobbies on your local network
-    - Ability to sort the lobby list by lobby name or player count
-    - Supports the challenge moon and specifying a lobby tag
+    - Ability to sort by lobby name or player count
+    - Support for challenge moon and specifying a lobby tag
 - Lobby Codes (Inspired by [Better Lobbies](https://thunderstore.io/c/lethal-company/p/Ryokune/Better_Lobbies/))
   - You can copy your current lobby's id via the pause menu
   - You can copy a lobby id from the lobby list via the "Code" button
-  - You can join a lobby via the id by putting the id into the text input above the lobby list
+  - You can join a lobby via the id by putting it into the tag input above the lobby list
 - Lobby Name Filter Customisation
   - You can modify the blocked terms
 - Steam "Recently Played With" Integration

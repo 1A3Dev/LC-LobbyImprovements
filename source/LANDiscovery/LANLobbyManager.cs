@@ -196,7 +196,7 @@ namespace LobbyImprovements.LANDiscovery
                 }
 
                 Button JoinButton = componentInChildren.transform.Find("JoinButton")?.GetComponent<Button>();
-                if (JoinButton)
+                if (JoinButton && !componentInChildren.transform.Find("CopyCodeButton"))
                 {
                     JoinButton.onClick = new Button.ButtonClickedEvent();
                     JoinButton.onClick.AddListener(componentInChildren.JoinButton);
