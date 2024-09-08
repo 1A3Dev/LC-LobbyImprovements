@@ -8,13 +8,15 @@ using System.Linq;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
 using GameNetcodeStuff;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 
 namespace LobbyImprovements.LANDiscovery
 {
     [HarmonyPatch]
     public static class LANLobbyManager_LobbyList
     {
-        public static string DiscoveryKey = "LC_MoreCompany";
+        public static string DiscoveryKey = "1966720_LobbyImprovements";
 
         internal static LANLobby[] currentLobbyList;
 
@@ -38,8 +40,20 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                GameObject.Find("LobbyList/ListPanel/ToggleChallengeSort")?.SetActive(false); // Hide challenge mode toggle
-                GameObject.Find("LobbyList/ListPanel/Dropdown")?.SetActive(false); // Hide sort dropdown
+                GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
+                TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
+                if (sortDropdown != null && sortDropdown.options[0].text != "ASC: Name")
+                {
+                    sortDropdown.ClearOptions();
+                    sortDropdown.AddOptions(new List<TMP_Dropdown.OptionData>()
+                    {
+                        new("ASC: Name"),
+                        new("DESC: Name"),
+                        new("ASC: Players"),
+                        new("DESC: Players"),
+                    });
+                    __instance.sortByDistanceSetting = sortDropdown.value;
+                }
                 LoadServerList_LAN(__instance);
                 return false;
             }
@@ -96,9 +110,39 @@ namespace LobbyImprovements.LANDiscovery
         {
             bool anyResults = false;
 
+            TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
+            if (sortDropdown != null)
+            {
+                switch (__instance.sortByDistanceSetting)
+                {
+                    case 0: // ASC: Name
+                        lobbyList = lobbyList.OrderBy(x => x.LobbyName).ToArray();
+                        break;
+                    case 1: // DESC: Name
+                        lobbyList = lobbyList.OrderByDescending(x => x.LobbyName).ToArray();
+                        break;
+                    case 2: // ASC: Players
+                        lobbyList = lobbyList.OrderBy(x => x.MemberCount).ToArray();
+                        break;
+                    case 3: // DESC: Players
+                        lobbyList = lobbyList.OrderByDescending(x => x.MemberCount).ToArray();
+                        break;
+                }
+            }
+
             for (int i = 0; i < lobbyList.Length; i++)
             {
-                string lobbyName = lobbyList[i].GetData("name");
+                if (!__instance.sortWithChallengeMoons && lobbyList[i].IsChallengeMoon)
+                {
+                    continue;
+                }
+
+                if (__instance.serverTagInputField.text != string.Empty && __instance.serverTagInputField.text != lobbyList[i].LobbyTag)
+                {
+                    continue;
+                }
+
+                string lobbyName = lobbyList[i].LobbyName;
                 if (lobbyName.Length == 0)
                 {
                     continue;
@@ -113,7 +157,8 @@ namespace LobbyImprovements.LANDiscovery
 
                 anyResults = true;
 
-                GameObject obj = Object.Instantiate(__instance.LobbySlotPrefab, __instance.levelListContainer);
+                GameObject original = !lobbyList[i].IsChallengeMoon ? __instance.LobbySlotPrefab : __instance.LobbySlotPrefabChallenge;
+                GameObject obj = Object.Instantiate(original, __instance.levelListContainer);
                 obj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f + __instance.lobbySlotPositionOffset);
                 __instance.lobbySlotPositionOffset -= 42f;
                 LobbySlot originalSlot = obj.GetComponentInChildren<LobbySlot>();
@@ -122,11 +167,25 @@ namespace LobbyImprovements.LANDiscovery
                 LANLobbySlot componentInChildren = originalSlot.gameObject.AddComponent<LANLobbySlot>();
                 Object.Destroy(originalSlot);
 
-                componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName")?.GetComponent<TextMeshProUGUI>();
+                if (lobbyList[i].IsChallengeMoon)
+                {
+                    componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName (1)")?.GetComponent<TextMeshProUGUI>();
+                    componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers (2)")?.GetComponent<TextMeshProUGUI>();
+                    TextMeshProUGUI chalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
+                    if (chalModeText != null)
+                    {
+                        chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
+                    }
+                }
+                else
+                {
+                    componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName")?.GetComponent<TextMeshProUGUI>();
+                    componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers")?.GetComponent<TextMeshProUGUI>();
+                }
+
                 if (componentInChildren.LobbyName)
                     componentInChildren.LobbyName.text = lobbyName.Substring(0, Mathf.Min(lobbyName.Length, 40));
 
-                componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers")?.GetComponent<TextMeshProUGUI>();
                 if (componentInChildren.playerCount)
                     componentInChildren.playerCount.text = $"{lobbyList[i].MemberCount} / {lobbyList[i].MaxMembers}";
 
@@ -135,7 +194,7 @@ namespace LobbyImprovements.LANDiscovery
                 {
                     componentInChildren.HostName.transform.localPosition = new Vector3(62f, -18.2f, -4.2f);
                     componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}:{lobbyList[i].Port}";
-                    componentInChildren.HostName.gameObject.SetActive(true);
+                    //componentInChildren.HostName.gameObject.SetActive(true);
                 }
 
                 Button JoinButton = componentInChildren.transform.Find("JoinButton")?.GetComponent<Button>();
@@ -164,6 +223,7 @@ namespace LobbyImprovements.LANDiscovery
         private static void LAN_HostSetAllowRemoteConnections(MenuManager __instance)
         {
             __instance.hostSettings_LobbyPublic = true;
+            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
             __instance.privatePublicDescription.text = "PUBLIC means your game will be joinable by anyone on your network.";
         }
 
@@ -172,6 +232,7 @@ namespace LobbyImprovements.LANDiscovery
         private static void LAN_HostSetLocal(MenuManager __instance)
         {
             __instance.hostSettings_LobbyPublic = false;
+            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
             __instance.privatePublicDescription.text = "PRIVATE means your game will only be joinable from your local machine.";
         }
 
@@ -193,10 +254,12 @@ namespace LobbyImprovements.LANDiscovery
                     __instance.LAN_HostSetLocal();
                 }
             }
+            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
         }
 
         [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
         [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
         private static void MenuManager_ClickHostButton(MenuManager __instance)
         {
             Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
@@ -227,16 +290,6 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
-        [HarmonyPatch(typeof(MenuManager), "Update")]
-        [HarmonyPostfix]
-        private static void MenuManager_Update(MenuManager __instance)
-        {
-            if (GameNetworkManager.Instance != null && GameNetworkManager.Instance.disableSteam && __instance.lobbyTagInputField && __instance.lobbyTagInputField.gameObject && __instance.lobbyTagInputField.gameObject.activeSelf)
-            {
-                __instance.lobbyTagInputField.gameObject.SetActive(false);
-            }
-        }
-
         [HarmonyPatch(typeof(MenuManager), "EnableLeaderboardDisplay")]
         [HarmonyPostfix]
         private static void EnableLeaderboardDisplay(MenuManager __instance, bool enable)
@@ -261,6 +314,41 @@ namespace LobbyImprovements.LANDiscovery
                 __instance.HostSettingsScreen.transform.Find("ChallengeLeaderboard/LobbyList (1)/ListPanel/Dropdown")?.gameObject?.SetActive(false);
                 __instance.requestingLeaderboard = false;
             }
+        }
+
+        [HarmonyPatch(typeof(MenuManager), "Update")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> TranspileMoveNext(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            bool foundTagInputField = false;
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
+            {
+                if (!alreadyReplaced)
+                {
+                    if (!foundTagInputField && instruction.opcode == OpCodes.Ldfld && instruction.operand?.ToString() == "TMPro.TMP_InputField lobbyTagInputField")
+                    {
+                        foundTagInputField = true;
+                    }
+                    else if (foundTagInputField && instruction.opcode == OpCodes.Brtrue)
+                    {
+                        CodeInstruction popInst = new CodeInstruction(OpCodes.Pop);
+                        newInstructions.Add(popInst);
+
+                        CodeInstruction alwaysTrueInst = new CodeInstruction(OpCodes.Ldc_I4_1);
+                        newInstructions.Add(alwaysTrueInst);
+
+                        alreadyReplaced = true;
+                    }
+                }
+
+                newInstructions.Add(instruction);
+            }
+
+            if (!alreadyReplaced) PluginLoader.StaticLogger.LogWarning($"MenuManager_Update failed to remove tag input field code");
+
+            return (alreadyReplaced ? newInstructions : instructions).AsEnumerable();
         }
     }
 

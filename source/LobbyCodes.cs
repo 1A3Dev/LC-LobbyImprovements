@@ -93,10 +93,9 @@ namespace LobbyImprovements
             {
                 return Dns.GetHostEntry(Dns.GetHostName()).AddressList.First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
             }
-
-            var url = "https://api.ipify.org/";
+            
             var ip = "0.0.0.0";
-
+            var url = "https://api.ipify.org/";
             try
             {
                 WebRequest request = WebRequest.Create(url);
@@ -111,7 +110,6 @@ namespace LobbyImprovements
             {
                 PluginLoader.StaticLogger.LogError(ex);
             }
-
             return ip;
         }
 

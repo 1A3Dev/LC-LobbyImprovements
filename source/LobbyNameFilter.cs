@@ -52,7 +52,7 @@ namespace LobbyImprovements
 
             if (!alreadyReplaced) PluginLoader.StaticLogger.LogWarning($"LobbyNameFilter failed to replace offensiveWords");
 
-            return newInstructions.AsEnumerable();
+            return (alreadyReplaced ? newInstructions : instructions).AsEnumerable();
         }
     }
 }

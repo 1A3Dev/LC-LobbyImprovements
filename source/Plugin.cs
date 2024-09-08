@@ -157,6 +157,7 @@ namespace LobbyImprovements
                     if (LobbyCodes_LAN.TryParseIpAndPort(__instance.serverTagInputField.text, out IPAddress ipAddress, out int port))
                     {
                         LobbyCodes_LAN.JoinLobbyByIP(ipAddress.ToString(), (ushort)port);
+                        return false;
                     }
                 }
                 else if (ulong.TryParse(__instance.serverTagInputField.text, out ulong lobbyId) && lobbyId.ToString().Length >= 15 && lobbyId.ToString().Length <= 20)

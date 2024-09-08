@@ -8,28 +8,18 @@ using UnityEngine;
 
 namespace LobbyImprovements.LANDiscovery
 {
+    [Serializable]
     public class LANLobby
     {
+        public string GameId;
+        public string GameVersion;
         public string IPAddress;
         public ushort Port;
+        public string LobbyName;
+        public string LobbyTag = "none";
         public int MemberCount;
         public int MaxMembers;
-        public Dictionary<string, string> Data;
-        public string GetData(string key)
-        {
-            return Data.ContainsKey(key) ? Data[key] : null;
-        }
-        public void SetData(string key, string value)
-        {
-            if (Data.ContainsKey(key))
-            {
-                Data[key] = value;
-            }
-            else
-            {
-                Data.Add(key, value);
-            }
-        }
+        public bool IsChallengeMoon;
     }
 
     public class ClientDiscovery : MonoBehaviour
@@ -82,44 +72,24 @@ namespace LobbyImprovements.LANDiscovery
         {
             try
             {
-                string[] parts = message.Split(';');
-                if (parts.Length == 5 && parts[0] == LANLobbyManager_LobbyList.DiscoveryKey)
+                LANLobby parsedLobby = JsonUtility.FromJson<LANLobby>(message);
+                if (parsedLobby != null && parsedLobby.GameId == LANLobbyManager_LobbyList.DiscoveryKey && parsedLobby.GameVersion == GameNetworkManager.Instance.gameVersionNum.ToString())
                 {
-                    ushort lobbyPort = ushort.Parse(parts[1]);
-                    int currentPlayers = int.Parse(parts[2]);
-                    int maxPlayers = int.Parse(parts[3]);
-                    string lobbyName = parts[4];
+                    parsedLobby.IPAddress = ipAddress;
 
                     LANLobby existingLobby = discoveredLobbies.Find(lobby =>
-                        lobby.IPAddress == ipAddress && lobby.Port == lobbyPort);
+                        lobby.IPAddress == parsedLobby.IPAddress && lobby.Port == parsedLobby.Port);
 
                     if (existingLobby != null)
                     {
-                        existingLobby.SetData("name", lobbyName);
-                        existingLobby.MemberCount = currentPlayers;
-                        existingLobby.MaxMembers = maxPlayers;
-                        PluginLoader.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {existingLobby.GetData("name")} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
+                        existingLobby = parsedLobby;
+                        PluginLoader.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {existingLobby.LobbyName} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
                     }
                     else
                     {
-                        LANLobby lobby = new LANLobby
-                        {
-                            IPAddress = ipAddress,
-                            Port = lobbyPort,
-                            Data = new Dictionary<string, string>() {
-                                { "name", lobbyName }
-                            },
-                            MemberCount = currentPlayers,
-                            MaxMembers = maxPlayers
-                        };
-
-                        discoveredLobbies.Add(lobby);
-                        PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Discovered Lobby: {lobby.GetData("name")} at {lobby.IPAddress}:{lobby.Port} with {lobby.MemberCount}/{lobby.MaxMembers} players.");
+                        discoveredLobbies.Add(parsedLobby);
+                        PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Discovered Lobby: {parsedLobby.LobbyName} at {parsedLobby.IPAddress}:{parsedLobby.Port} with {parsedLobby.MemberCount}/{parsedLobby.MaxMembers} players.");
                     }
-                }
-                else
-                {
-                    PluginLoader.StaticLogger.LogWarning("[LAN Discovery] Invalid broadcast format received.");
                 }
             }
             catch (Exception ex)

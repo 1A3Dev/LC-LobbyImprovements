@@ -26,7 +26,7 @@ namespace LobbyImprovements
                 sortButton.onClick = new Button.ButtonClickedEvent();
                 sortButton.onClick.AddListener(() => {
                     LobbySlot[] lobbySlots = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
-                    lobbySlots = lobbySlots.OrderByDescending(lobby => int.Parse(lobby.playerCount.text.Split(' ')[0])).ToArray();
+                    lobbySlots = lobbySlots.OrderByDescending(lobby => lobby.thisLobby.MemberCount).ToArray();
                     float lobbySlotPositionOffset = 0f;
                     for (int i = 0; i < lobbySlots.Length; i++)
                     {

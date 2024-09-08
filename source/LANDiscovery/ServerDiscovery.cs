@@ -30,17 +30,23 @@ namespace LobbyImprovements.LANDiscovery
             if (!isServerRunning)
                 return;
 
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
-            List<string> lobbyData = new List<string>()
-            {
-                LANLobbyManager_LobbyList.DiscoveryKey,
-                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port.ToString(),
-                GameNetworkManager.Instance.connectedPlayers.ToString(),
-                PluginLoader.GetMaxPlayers().ToString(),
-                GameNetworkManager.Instance.lobbyHostSettings.lobbyName?.Replace(";", ":"),
-            };
+            if (GameNetworkManager.Instance.connectedPlayers >= PluginLoader.GetMaxPlayers())
+                return;
 
-            byte[] data = Encoding.UTF8.GetBytes(string.Join(';', lobbyData));
+            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
+
+            string dataStr = JsonUtility.ToJson(new LANLobby() {
+                GameId = LANLobbyManager_LobbyList.DiscoveryKey,
+                GameVersion = GameNetworkManager.Instance.gameVersionNum.ToString(),
+                Port = NetworkManager.Singleton?.GetComponent<UnityTransport>()?.ConnectionData.Port ?? 7777,
+                LobbyName = GameNetworkManager.Instance.lobbyHostSettings?.lobbyName,
+                LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none",
+                MemberCount = GameNetworkManager.Instance.connectedPlayers,
+                MaxMembers = PluginLoader.GetMaxPlayers(),
+                IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile"
+            });
+
+            byte[] data = Encoding.UTF8.GetBytes(dataStr);
             udpClient.Send(data, data.Length, ipEndPoint);
         }
 
