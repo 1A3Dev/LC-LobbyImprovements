@@ -212,14 +212,14 @@ namespace LobbyImprovements.LANDiscovery
                 Button accessRemoteBtn = accessRemoteBtnParent.GetComponent<Button>();
                 accessRemoteBtn.onClick = new Button.ButtonClickedEvent();
                 accessRemoteBtn.onClick.AddListener(__instance.LAN_HostSetAllowRemoteConnections);
-                accessRemoteBtn.GetComponentInChildren<TextMeshProUGUI>().text = "PUBLIC";
+                accessRemoteBtn.GetComponentInChildren<TextMeshProUGUI>().text = "Public";
 
                 Transform accessLocalBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Private");
                 __instance.lanSetLocalButtonAnimator = accessLocalBtnParent.GetComponent<Animator>();
                 Button accessLocalBtn = accessLocalBtnParent.GetComponent<Button>();
                 accessLocalBtn.onClick = new Button.ButtonClickedEvent();
                 accessLocalBtn.onClick.AddListener(__instance.LAN_HostSetLocal);
-                accessLocalBtnParent.GetComponentInChildren<TextMeshProUGUI>().text = "PRIVATE";
+                accessLocalBtnParent.GetComponentInChildren<TextMeshProUGUI>().text = "Private";
 
                 __instance.lobbyNameInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerNameField").GetComponent<TMP_InputField>();
                 __instance.lobbyTagInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerTagInputField").GetComponent<TMP_InputField>();

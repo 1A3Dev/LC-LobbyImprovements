@@ -9,13 +9,9 @@ using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using LobbyImprovements.LANDiscovery;
-using Steamworks.Data;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
-using static UnityEngine.UI.Button;
 using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
@@ -45,15 +41,18 @@ namespace LobbyImprovements
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
 
-        public static int MaxPlayers = 4;
         public static int GetMaxPlayers()
         {
-            if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
+            if ((StartOfRound.Instance?.allPlayerScripts?.Length ?? 4) > 4)
+            {
+                return StartOfRound.Instance.allPlayerScripts.Length;
+            }
+            else if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
                 try { return Compatibility.MoreCompany.GetMaxPlayers(); } catch { }
             }
 
-            return MaxPlayers;
+            return 4;
         }
 
         private void Awake()
