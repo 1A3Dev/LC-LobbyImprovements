@@ -173,9 +173,7 @@ namespace LobbyImprovements.LANDiscovery
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers (2)")?.GetComponent<TextMeshProUGUI>();
                     TextMeshProUGUI chalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     if (chalModeText != null)
-                    {
                         chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
-                    }
                 }
                 else
                 {

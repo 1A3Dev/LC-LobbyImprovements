@@ -15,6 +15,8 @@ This mod adds various features relating to lobbies:
   - Lobby List
     - You can directly connect to an IP via the text input above the lobby list (the port is optional and can be specified after a colon for example: 127.0.0.1:7777)
     - This uses UDP to discover other lobbies on your local network
+    - Ability to sort the lobby list by lobby name or player count
+    - Supports the challenge moon and specifying a lobby tag
 - Lobby Codes (Inspired by [Better Lobbies](https://thunderstore.io/c/lethal-company/p/Ryokune/Better_Lobbies/))
   - You can copy your current lobby's id via the pause menu
   - You can copy a lobby id from the lobby list via the "Code" button
@@ -23,7 +25,7 @@ This mod adds various features relating to lobbies:
   - You can modify the blocked terms
 - Steam "Recently Played With" Integration
   - This enables the steam "recently played with" integration which allows you to view the list of people you have recently played with. You can access the list by opening steam then clicking [View > Players](https://i.imgur.com/Mzdrgjt.png).
-- Sort the lobby list by the player count
+- Button on the steam lobby list to sort by player count
 
 ### Support
 

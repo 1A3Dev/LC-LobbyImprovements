@@ -137,7 +137,7 @@ namespace LobbyImprovements
         {
             if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam)
             {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter IP Address";
+                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or ip...";
             }
             else
             {
