@@ -18,7 +18,7 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static void Prefix(ref SteamLobbyManager __instance)
         {
-            __instance.censorOffensiveLobbyNames = PluginLoader.lobbyNameFilterEnabled.Value && PluginLoader.BlockedTermsRaw.Length > 0;
+            __instance.censorOffensiveLobbyNames = PluginLoader.lobbyNameFilterEnabled.Value && PluginLoader.lobbyNameParsedBlacklist.Length > 0;
         }
 
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter", MethodType.Enumerator)]
@@ -35,7 +35,7 @@ namespace LobbyImprovements
                     // check for IL_0022: ldc.i4.s
                     if (!shouldSkip && instruction.opcode == OpCodes.Ldc_I4_S)
                     {
-                        newInstructions.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(PluginLoader), "BlockedTermsRaw")));
+                        newInstructions.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(PluginLoader), "lobbyNameParsedBlacklist")));
                         shouldSkip = true;
                     }
                     else if (shouldSkip && instruction.opcode == OpCodes.Stfld)

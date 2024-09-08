@@ -33,7 +33,7 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPatch(typeof(SteamLobbyManager), "LoadServerList")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.First)]
-        private static bool MenuManager_LoadServerList(SteamLobbyManager __instance)
+        private static bool SteamLobbyManager_LoadServerList(SteamLobbyManager __instance)
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
@@ -104,7 +104,7 @@ namespace LobbyImprovements.LANDiscovery
                 }
 
                 string lobbyNameNoCapitals = lobbyName.ToLower();
-                if (__instance.censorOffensiveLobbyNames && PluginLoader.BlockedTermsRaw.Any(x => lobbyNameNoCapitals.Contains(x)))
+                if (__instance.censorOffensiveLobbyNames && PluginLoader.lobbyNameParsedBlacklist.Any(x => lobbyNameNoCapitals.Contains(x)))
                 {
                     PluginLoader.StaticLogger.LogInfo("Lobby name is offensive: " + lobbyNameNoCapitals + "; skipping");
                     continue;

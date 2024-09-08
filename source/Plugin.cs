@@ -40,7 +40,7 @@ namespace LobbyImprovements
         public static ConfigEntry<bool> lobbyNameFilterDefaults;
         public static ConfigEntry<string> lobbyNameFilterWhitelist;
         public static ConfigEntry<string> lobbyNameFilterBlacklist;
-        public static string[] BlockedTermsRaw;
+        public static string[] lobbyNameParsedBlacklist;
 
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
@@ -111,12 +111,12 @@ namespace LobbyImprovements
             string[] parsedWhitelist = lobbyNameFilterWhitelist.Value.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
             string[] parsedBlacklist = lobbyNameFilterBlacklist.Value.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
 
-            BlockedTermsRaw = LobbyNameFilter.offensiveWords.Union(parsedBlacklist).Where(x => !parsedWhitelist.Contains(x)).Select(x => x.ToLower()).ToArray();
+            lobbyNameParsedBlacklist = LobbyNameFilter.offensiveWords.Union(parsedBlacklist).Where(x => !parsedWhitelist.Contains(x)).Select(x => x.ToLower()).ToArray();
 
             SteamLobbyManager lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
             if (lobbyManager != null)
             {
-                lobbyManager.censorOffensiveLobbyNames = lobbyNameFilterEnabled.Value && BlockedTermsRaw.Length > 0;
+                lobbyManager.censorOffensiveLobbyNames = lobbyNameFilterEnabled.Value && lobbyNameParsedBlacklist.Length > 0;
             }
         }
 

@@ -68,7 +68,7 @@ namespace LobbyImprovements.LANDiscovery
 
         [HarmonyPatch(typeof(MenuManager), "StartHosting")]
         [HarmonyPostfix]
-        public static void OnStartServer(MenuManager __instance)
+        private static void OnStartServer(MenuManager __instance)
         {
             if (__instance.hostSettings_LobbyPublic && GameNetworkManager.Instance.disableSteam)
             {
@@ -86,7 +86,7 @@ namespace LobbyImprovements.LANDiscovery
 
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
-        public static void OnStopServer()
+        private static void OnStopServer()
         {
             if (serverDiscovery && serverDiscovery.isServerRunning)
             {
