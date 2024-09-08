@@ -9,7 +9,7 @@
     <PropertyGroup>
         <IsThunderstorePackable>true</IsThunderstorePackable>
         <ThunderstoreName>LobbyImprovements</ThunderstoreName>
-        <ThunderstoreDescription>Adds a button to host an invite only lobby.</ThunderstoreDescription>
+        <ThunderstoreDescription>Various improvements for lan and online lobbies</ThunderstoreDescription>
         <ThunderstoreIconPath>$(ProjectDir)assets/icons/icon.png</ThunderstoreIconPath>
         <HasBepInPlugin>true</HasBepInPlugin>
     </PropertyGroup>
