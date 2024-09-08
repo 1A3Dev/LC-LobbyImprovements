@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using System.Linq;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
+using GameNetcodeStuff;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -266,6 +267,20 @@ namespace LobbyImprovements.LANDiscovery
     [HarmonyPatch]
     public class LANLobbyManager_InGame
     {
+        // [Client] Fix LAN Above Head Usernames
+        [HarmonyPatch(typeof(NetworkSceneManager), "PopulateScenePlacedObjects")]
+        [HarmonyPostfix]
+        public static void Fix_LANUsernameBillboard()
+        {
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
+                {
+                    newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
         [HarmonyPostfix]
         private static void OpenQuickMenu(QuickMenuManager __instance)

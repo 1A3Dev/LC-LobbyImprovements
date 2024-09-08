@@ -18,16 +18,18 @@ This mod adds various features relating to lobbies:
 - Lobby Codes (Inspired by [Better Lobbies](https://thunderstore.io/c/lethal-company/p/Ryokune/Better_Lobbies/))
   - You can copy your current lobby's id via the pause menu
   - You can copy a lobby id from the lobby list via the "Code" button
-  - You can put the lobby
+  - You can join a lobby via the id by putting the id into the text input above the lobby list
 - Lobby Name Filter Customisation
   - You can modify the blocked terms
-- Button to sort the lobby list by total players
+- Steam "Recently Played With" Integration
+  - This enables the steam "recently played with" integration which allows you to view the list of people you have recently played with. You can access the list by opening steam then clicking [View > Players](https://i.imgur.com/Mzdrgjt.png).
+- Sort the lobby list by the player count
 
 ### Support
 
 You can get support in any the following places:
 
-- The [thread](https://discord.com/channels/1168655651455639582/1188167322377126010) in the [LC Modding Discord Server](https://discord.gg/lcmod)
+- The [thread](https://discord.com/channels/1168655651455639582/1282200504318820374) in the [LC Modding Discord Server](https://discord.gg/lcmod)
 - [GitHub Issues](https://github.com/1A3Dev/LC-LobbyImprovements/issues)
 - [My Discord Server](https://discord.gg/DZD2apDnMM)
 

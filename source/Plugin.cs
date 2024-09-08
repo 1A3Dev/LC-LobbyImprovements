@@ -32,6 +32,8 @@ namespace LobbyImprovements
         internal static ManualLogSource StaticLogger { get; private set; }
         internal static ConfigFile StaticConfig { get; private set; }
 
+        public static ConfigEntry<bool> recentlyPlayedWithOrbit;
+
         public static ConfigEntry<bool> lobbyNameFilterEnabled;
         public static ConfigEntry<bool> lobbyNameFilterDefaults;
         public static ConfigEntry<string> lobbyNameFilterWhitelist;
@@ -65,6 +67,8 @@ namespace LobbyImprovements
             Instance = this;
             StaticLogger = Logger;
             StaticConfig = Config;
+
+            recentlyPlayedWithOrbit = StaticConfig.Bind("Recent Players", "Enabled In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
             lobbyNameFilterEnabled.SettingChanged += (sender, args) =>
