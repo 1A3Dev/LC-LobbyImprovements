@@ -10,20 +10,18 @@
 This mod adds various features relating to lobbies:
 
 - Invite Only Lobbies
-  - There are ways that people can join the regular friend-only lobbies if you don't have your steam p from the steam profile.
-  - This is a clone of my deprecated mod [LobbyInviteOnly](https://thunderstore.io/c/lethal-company/p/Dev1A3/LobbyInviteOnly)
 - LAN Improvements
   - Customisable Port
   - Lobby List
     - You can directly connect to an IP via the text input above the lobby list (the port is optional and can be specified after a colon for example: 127.0.0.1:7777)
     - This uses UDP to discover other lobbies on your local network
-- Lobby Codes
+- Lobby Codes (Inspired by [Better Lobbies](https://thunderstore.io/c/lethal-company/p/Ryokune/Better_Lobbies/))
   - You can copy your current lobby's id via the pause menu
   - You can copy a lobby id from the lobby list via the "Code" button
   - You can put the lobby
-  - This is my own implementation of the lobby codes inspired by [Better Lobbies](https://thunderstore.io/c/lethal-company/p/Ryokune/Better_Lobbies/)
-- Lobby Name Filter
-  - This is clone of my deprecated mod [LobbyOffensiveNames](https://thunderstore.io/c/lethal-company/p/Dev1A3/LobbyOffensiveNames)
+- Lobby Name Filter Customisation
+  - You can modify the blocked terms
+- Button to sort the lobby list by total players
 
 ### Support
 

@@ -8,11 +8,17 @@ namespace LobbyImprovements
     [HarmonyPatch]
     public class LobbyNameFilter
     {
+        public static string[] offensiveWords = [
+            "nigger", "faggot", "n1g", "nigers", "cunt", "pussies", "pussy", "minors", "children", "kids",
+            "chink", "buttrape", "molest", "rape", "coon", "negro", "beastiality", "cocks", "cumshot", "ejaculate",
+            "pedophile", "furfag", "necrophilia", "yiff", "sex", "porn"
+        ];
+
         [HarmonyPatch(typeof(SteamLobbyManager), "OnEnable")]
         [HarmonyPrefix]
         private static void Prefix(ref SteamLobbyManager __instance)
         {
-            __instance.censorOffensiveLobbyNames = PluginLoader.lobbyFilterEnabled.Value && PluginLoader.BlockedTermsRaw.Length > 0;
+            __instance.censorOffensiveLobbyNames = PluginLoader.lobbyNameFilterEnabled.Value && PluginLoader.BlockedTermsRaw.Length > 0;
         }
 
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter", MethodType.Enumerator)]

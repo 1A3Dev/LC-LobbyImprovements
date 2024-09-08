@@ -36,7 +36,7 @@ namespace LobbyImprovements.LANDiscovery
                 LANLobbyManager_LobbyList.DiscoveryKey,
                 NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port.ToString(),
                 GameNetworkManager.Instance.connectedPlayers.ToString(),
-                PluginLoader.MaxPlayers.ToString(),
+                PluginLoader.GetMaxPlayers().ToString(),
                 GameNetworkManager.Instance.lobbyHostSettings.lobbyName?.Replace(";", ":"),
             };
 

@@ -7,7 +7,6 @@ using UnityEngine.UI;
 using System.Linq;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
-using System.Net;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -94,12 +93,13 @@ namespace LobbyImprovements.LANDiscovery
         }
         private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance)
         {
+            bool anyResults = false;
+
             for (int i = 0; i < lobbyList.Length; i++)
             {
                 string lobbyName = lobbyList[i].GetData("name");
                 if (lobbyName.Length == 0)
                 {
-                    PluginLoader.StaticLogger.LogInfo("lobby name is length of 0, skipping");
                     continue;
                 }
 
@@ -109,6 +109,8 @@ namespace LobbyImprovements.LANDiscovery
                     PluginLoader.StaticLogger.LogInfo("Lobby name is offensive: " + lobbyNameNoCapitals + "; skipping");
                     continue;
                 }
+
+                anyResults = true;
 
                 GameObject obj = Object.Instantiate(__instance.LobbySlotPrefab, __instance.levelListContainer);
                 obj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f + __instance.lobbySlotPositionOffset);
@@ -130,8 +132,8 @@ namespace LobbyImprovements.LANDiscovery
                 componentInChildren.HostName = componentInChildren.transform.Find("HostName")?.GetComponent<TextMeshProUGUI>();
                 if (componentInChildren.HostName)
                 {
-                    componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}:{lobbyList[i].Port}";
                     componentInChildren.HostName.transform.localPosition = new Vector3(62f, -18.2f, -4.2f);
+                    componentInChildren.HostName.GetComponent<TextMeshProUGUI>().text = $"Host: {lobbyList[i].IPAddress}:{lobbyList[i].Port}";
                     componentInChildren.HostName.gameObject.SetActive(true);
                 }
 
@@ -147,20 +149,9 @@ namespace LobbyImprovements.LANDiscovery
 
                 yield return null;
             }
-        }
 
-        [HarmonyPatch(typeof(SteamLobbyManager), "OnEnable")]
-        [HarmonyPostfix]
-        private static void SLM_OnEnable(SteamLobbyManager __instance)
-        {
-            if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam)
-            {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter IP Address";
-            }
-            else
-            {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
-            }
+            if (!anyResults)
+                __instance.serverListBlankText.text = "No available servers to join.";
         }
     }
 
@@ -208,33 +199,30 @@ namespace LobbyImprovements.LANDiscovery
         private static void MenuManager_ClickHostButton(MenuManager __instance)
         {
             Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
-            if (lobbyHostOptions != null)
+            if (lobbyHostOptions != null && lobbyHostOptions.transform.Find("LANOptions/AllowRemote") && GameNetworkManager.Instance.disableSteam)
             {
-                if (lobbyHostOptions.transform.Find("LANOptions/AllowRemote") && GameNetworkManager.Instance.disableSteam)
-                {
-                    Object.Destroy(lobbyHostOptions.transform.Find("LANOptions").gameObject);
-                    GameObject OptionsNormal = lobbyHostOptions.transform.Find("OptionsNormal").gameObject;
-                    GameObject menu = Object.Instantiate(OptionsNormal, OptionsNormal.transform.position, OptionsNormal.transform.rotation, OptionsNormal.transform.parent);
-                    __instance.HostSettingsOptionsLAN = menu;
-                    __instance.HostSettingsOptionsLAN.name = "LANOptions";
+                Object.Destroy(lobbyHostOptions.transform.Find("LANOptions").gameObject);
+                GameObject OptionsNormal = lobbyHostOptions.transform.Find("OptionsNormal").gameObject;
+                GameObject menu = Object.Instantiate(OptionsNormal, OptionsNormal.transform.position, OptionsNormal.transform.rotation, OptionsNormal.transform.parent);
+                __instance.HostSettingsOptionsLAN = menu;
+                __instance.HostSettingsOptionsLAN.name = "LANOptions";
 
-                    Transform accessRemoteBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Public");
-                    __instance.lanSetAllowRemoteButtonAnimator = accessRemoteBtnParent.GetComponent<Animator>();
-                    Button accessRemoteBtn = accessRemoteBtnParent.GetComponent<Button>();
-                    accessRemoteBtn.onClick = new Button.ButtonClickedEvent();
-                    accessRemoteBtn.onClick.AddListener(__instance.LAN_HostSetAllowRemoteConnections);
-                    accessRemoteBtn.GetComponentInChildren<TextMeshProUGUI>().text = "PUBLIC";
+                Transform accessRemoteBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Public");
+                __instance.lanSetAllowRemoteButtonAnimator = accessRemoteBtnParent.GetComponent<Animator>();
+                Button accessRemoteBtn = accessRemoteBtnParent.GetComponent<Button>();
+                accessRemoteBtn.onClick = new Button.ButtonClickedEvent();
+                accessRemoteBtn.onClick.AddListener(__instance.LAN_HostSetAllowRemoteConnections);
+                accessRemoteBtn.GetComponentInChildren<TextMeshProUGUI>().text = "PUBLIC";
 
-                    Transform accessLocalBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Private");
-                    __instance.lanSetLocalButtonAnimator = accessLocalBtnParent.GetComponent<Animator>();
-                    Button accessLocalBtn = accessLocalBtnParent.GetComponent<Button>();
-                    accessLocalBtn.onClick = new Button.ButtonClickedEvent();
-                    accessLocalBtn.onClick.AddListener(__instance.LAN_HostSetLocal);
-                    accessLocalBtnParent.GetComponentInChildren<TextMeshProUGUI>().text = "PRIVATE";
+                Transform accessLocalBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Private");
+                __instance.lanSetLocalButtonAnimator = accessLocalBtnParent.GetComponent<Animator>();
+                Button accessLocalBtn = accessLocalBtnParent.GetComponent<Button>();
+                accessLocalBtn.onClick = new Button.ButtonClickedEvent();
+                accessLocalBtn.onClick.AddListener(__instance.LAN_HostSetLocal);
+                accessLocalBtnParent.GetComponentInChildren<TextMeshProUGUI>().text = "PRIVATE";
 
-                    __instance.lobbyNameInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerNameField").GetComponent<TMP_InputField>();
-                    __instance.lobbyTagInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerTagInputField").GetComponent<TMP_InputField>();
-                }
+                __instance.lobbyNameInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerNameField").GetComponent<TMP_InputField>();
+                __instance.lobbyTagInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerTagInputField").GetComponent<TMP_InputField>();
             }
         }
 
@@ -278,24 +266,25 @@ namespace LobbyImprovements.LANDiscovery
     [HarmonyPatch]
     public class LANLobbyManager_InGame
     {
-
         [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
         [HarmonyPostfix]
         private static void OpenQuickMenu(QuickMenuManager __instance)
         {
+            // Add the lobby player count to the pause menu
             TextMeshProUGUI CrewHeaderText = __instance.menuContainer.transform.Find("PlayerList/Image/Header").GetComponentInChildren<TextMeshProUGUI>();
             if (CrewHeaderText != null)
             {
-                CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}):";
+                CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}):";
             }
 
+            // Copy the current lobby code (or ip if on lan)
             GameObject ResumeObj = __instance.menuContainer.transform.Find("MainButtons/Resume/")?.gameObject;
             if (ResumeObj != null)
             {
                 GameObject LobbyCodeObj = GameObject.Find("CopyCurrentLobbyCode");
                 if (LobbyCodeObj == null)
                 {
-                    LobbyCodeObj = UnityEngine.Object.Instantiate(ResumeObj.gameObject, ResumeObj.transform.parent);
+                    LobbyCodeObj = Object.Instantiate(ResumeObj.gameObject, ResumeObj.transform.parent);
                     LobbyCodeObj.name = "CopyCurrentLobbyCode";
 
                     TextMeshProUGUI LobbyCodeTextMesh = LobbyCodeObj.GetComponentInChildren<TextMeshProUGUI>();
