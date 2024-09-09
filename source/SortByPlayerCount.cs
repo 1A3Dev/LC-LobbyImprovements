@@ -13,10 +13,10 @@ namespace LobbyImprovements
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.First)]
-        private static void MenuManager_Start()
+        private static void MenuManager_Start(MenuManager __instance)
         {
             GameObject refreshButtonObject = GameObject.Find("/Canvas/MenuContainer/LobbyList/ListPanel/RefreshButton");
-            if (refreshButtonObject != null && !GameObject.Find("/Canvas/MenuContainer/LobbyList/ListPanel/SortPlayerCountButton"))
+            if (!__instance.isInitScene && refreshButtonObject != null && !GameObject.Find("/Canvas/MenuContainer/LobbyList/ListPanel/SortPlayerCountButton"))
             {
                 GameObject sortButtonObject = Object.Instantiate(refreshButtonObject.gameObject, refreshButtonObject.transform.parent);
                 sortButtonObject.name = "SortPlayerCountButton";

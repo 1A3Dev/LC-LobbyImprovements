@@ -15,7 +15,7 @@ namespace LobbyImprovements
         [HarmonyPostfix]
         private static void MenuManager_Start(MenuManager __instance)
         {
-            if (!GameNetworkManager.Instance.disableSteam)
+            if (!__instance.isInitScene && !GameNetworkManager.Instance.disableSteam)
             {
                 float height = 14.5f;
                 GameObject publicButtonObject = GameObject.Find("/Canvas/MenuContainer/LobbyHostSettings/HostSettingsContainer/LobbyHostOptions/OptionsNormal/Public") ?? GameObject.Find("/Canvas/MenuContainer/LobbyHostSettings/Panel/LobbyHostOptions/OptionsNormal/Public");

@@ -92,9 +92,9 @@ namespace LobbyImprovements.LANDiscovery
 
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
-        private static void OnStopServer()
+        private static void OnStopServer(MenuManager __instance)
         {
-            if (serverDiscovery && serverDiscovery.isServerRunning)
+            if (!__instance.isInitScene && serverDiscovery && serverDiscovery.isServerRunning)
             {
                 serverDiscovery.StopServerDiscovery();
             }

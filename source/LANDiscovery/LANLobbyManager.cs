@@ -26,7 +26,7 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPostfix]
         private static void MenuManager_Start(MenuManager __instance)
         {
-            if (GameNetworkManager.Instance.disableSteam)
+            if (!__instance.isInitScene && GameNetworkManager.Instance.disableSteam)
             {
                 __instance.lanButtonContainer?.SetActive(false);
                 __instance.joinCrewButtonContainer?.SetActive(true);
