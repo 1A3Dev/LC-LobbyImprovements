@@ -3,7 +3,6 @@ using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
 using HarmonyLib;
-using System.Collections.Generic;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
 
@@ -13,11 +12,24 @@ namespace LobbyImprovements.LANDiscovery
     {
         private UdpClient udpClient;
         internal bool isServerRunning = false;
+        private static LANLobby currentLobby = new LANLobby();
 
         public void StartServerDiscovery()
         {
             if (!isServerRunning)
             {
+                currentLobby = new LANLobby() {
+                    GameId = LANLobbyManager_LobbyList.DiscoveryKey,
+                    GameVersion = GameNetworkManager.Instance.gameVersionNum.ToString(),
+                    Port = NetworkManager.Singleton?.GetComponent<UnityTransport>()?.ConnectionData.Port ?? 7777,
+                    LobbyName = GameNetworkManager.Instance.lobbyHostSettings?.lobbyName,
+                    LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none",
+                    MemberCount = GameNetworkManager.Instance.connectedPlayers,
+                    MaxMembers = PluginLoader.GetMaxPlayers(),
+                    IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile"
+                };
+                LANLobbyManager_InGame.UpdateCurrentLANLobby(currentLobby);
+
                 udpClient = new UdpClient();
                 isServerRunning = true;
                 InvokeRepeating("BroadcastServer", 0, 1.0f); // Broadcast every second
@@ -30,23 +42,14 @@ namespace LobbyImprovements.LANDiscovery
             if (!isServerRunning)
                 return;
 
-            if (GameNetworkManager.Instance.connectedPlayers >= PluginLoader.GetMaxPlayers())
+            currentLobby.MemberCount = GameNetworkManager.Instance.connectedPlayers;
+
+            if (currentLobby.MemberCount >= PluginLoader.GetMaxPlayers())
                 return;
 
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
-
-            string dataStr = JsonUtility.ToJson(new LANLobby() {
-                GameId = LANLobbyManager_LobbyList.DiscoveryKey,
-                GameVersion = GameNetworkManager.Instance.gameVersionNum.ToString(),
-                Port = NetworkManager.Singleton?.GetComponent<UnityTransport>()?.ConnectionData.Port ?? 7777,
-                LobbyName = GameNetworkManager.Instance.lobbyHostSettings?.lobbyName,
-                LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none",
-                MemberCount = GameNetworkManager.Instance.connectedPlayers,
-                MaxMembers = PluginLoader.GetMaxPlayers(),
-                IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile"
-            });
-
+            string dataStr = JsonUtility.ToJson(currentLobby);
             byte[] data = Encoding.UTF8.GetBytes(dataStr);
+            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
             udpClient.Send(data, data.Length, ipEndPoint);
         }
 
@@ -71,12 +74,20 @@ namespace LobbyImprovements.LANDiscovery
     public static class ServerDiscoveryPatches
     {
         public static ServerDiscovery serverDiscovery;
+        public static bool LobbyPublic = false;
 
         [HarmonyPatch(typeof(MenuManager), "StartHosting")]
         [HarmonyPostfix]
-        private static void OnStartServer(MenuManager __instance)
+        private static void MenuManager_StartHosting(MenuManager __instance)
         {
-            if (__instance.hostSettings_LobbyPublic && GameNetworkManager.Instance.disableSteam)
+            LobbyPublic = __instance.hostSettings_LobbyPublic;
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), "Start")]
+        [HarmonyPostfix]
+        private static void OnStartServer()
+        {
+            if (LobbyPublic && GameNetworkManager.Instance.disableSteam)
             {
                 if (!serverDiscovery)
                 {

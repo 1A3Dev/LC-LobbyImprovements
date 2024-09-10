@@ -38,8 +38,8 @@ namespace LobbyImprovements.LANDiscovery
             isListening = true;
             PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery listening started");
 
-            Task listenTask = Task.Run(() => StartListening());
-
+            LANLobby foundLobby = null;
+            Task listenTask = Task.Run(() => StartListening(null, 0, ref foundLobby));
             await Task.Delay(TimeSpan.FromSeconds(discoveryTime));
 
             isListening = false;
@@ -49,7 +49,32 @@ namespace LobbyImprovements.LANDiscovery
             return discoveredLobbies;
         }
 
-        private void StartListening()
+        public async Task<LANLobby> DiscoverSpecificLobbyAsync(string targetLobbyIP, int targetLobbyPort, float discoveryTime)
+        {
+            discoveredLobbies.Clear();
+
+            udpClient = new UdpClient(listenPort);
+            isListening = true;
+            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Server discovery listening started for specific IP. Target: {targetLobbyIP}");
+
+            LANLobby foundLobby = null;
+            Task listenTask = Task.Run(() => StartListening(targetLobbyIP, targetLobbyPort, ref foundLobby));
+            float timePassed = 0f;
+            float pollInterval = 0.1f; // Check every 100 ms if the lobby is found
+            while (timePassed < discoveryTime && foundLobby == null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(pollInterval));
+                timePassed += pollInterval;
+            }
+
+            isListening = false;
+            udpClient.Close();
+            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Server discovery listening stopped for specific IP. Target: {targetLobbyIP} | Found: {foundLobby != null}");
+
+            return foundLobby;
+        }
+
+        private void StartListening(string targetLobbyIP, int targetLobbyPort, ref LANLobby foundLobby)
         {
             try
             {
@@ -59,7 +84,9 @@ namespace LobbyImprovements.LANDiscovery
                     byte[] data = udpClient.Receive(ref ipEndPoint); // Synchronous receive (non-async here)
 
                     string message = Encoding.UTF8.GetString(data);
-                    ParseAndStoreLobby(ipEndPoint.Address.ToString(), message);
+                    LANLobby tmpLobby = ParseAndStoreLobby(ipEndPoint.Address.ToString(), message, targetLobbyIP, targetLobbyPort);
+                    if (tmpLobby != null)
+                        foundLobby = tmpLobby;
                 }
             }
             catch (Exception ex)
@@ -68,7 +95,7 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
-        private void ParseAndStoreLobby(string ipAddress, string message)
+        private LANLobby ParseAndStoreLobby(string ipAddress, string message, string targetLobbyIP, int targetLobbyPort)
         {
             try
             {
@@ -77,13 +104,16 @@ namespace LobbyImprovements.LANDiscovery
                 {
                     parsedLobby.IPAddress = ipAddress;
 
-                    LANLobby existingLobby = discoveredLobbies.Find(lobby =>
-                        lobby.IPAddress == parsedLobby.IPAddress && lobby.Port == parsedLobby.Port);
+                    if (targetLobbyIP != null)
+                    {
+                        return parsedLobby.IPAddress == targetLobbyIP && parsedLobby.Port == targetLobbyPort ? parsedLobby : null;
+                    }
 
+                    LANLobby existingLobby = discoveredLobbies.Find(lobby => lobby.IPAddress == parsedLobby.IPAddress && lobby.Port == parsedLobby.Port);
                     if (existingLobby != null)
                     {
                         existingLobby = parsedLobby;
-                        PluginLoader.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {existingLobby.LobbyName} at {existingLobby.IPAddress}:{existingLobby.Port} with {existingLobby.MemberCount}/{existingLobby.MaxMembers} players.");
+                        //PluginLoader.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {parsedLobby.LobbyName} at {parsedLobby.IPAddress}:{parsedLobby.Port} with {parsedLobby.MemberCount}/{parsedLobby.MaxMembers} players.");
                     }
                     else
                     {
@@ -96,6 +126,8 @@ namespace LobbyImprovements.LANDiscovery
             {
                 PluginLoader.StaticLogger.LogError(ex);
             }
+
+            return null;
         }
     }
 }

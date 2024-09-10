@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using LobbyImprovements.LANDiscovery;
 using Steamworks;
 using Steamworks.Data;
 using System;
@@ -140,15 +141,18 @@ namespace LobbyImprovements
             return true;
         }
 
-        internal static void JoinLobbyByIP(string IP_Address, ushort Port = 0)
+        internal static void JoinLobbyByIP(string IP_Address, ushort Port = 0, LANLobby lanLobby = null)
         {
+            if (LANLobbyManager_InGame.waitingForLobbyDataRefresh)
+                return;
+
             if (Port == 0)
                 Port = (ushort)PluginLoader.lanDefaultPort.Value;
 
             NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address = IP_Address;
             NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port = Port;
             PluginLoader.StaticLogger.LogInfo($"Listening to LAN server: {IP_Address}:{Port}");
-            GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
+            LANLobbyManager_InGame.UpdateCurrentLANLobby(lanLobby, startAClient: true);
         }
     }
 }

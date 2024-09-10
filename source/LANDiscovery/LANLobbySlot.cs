@@ -10,7 +10,7 @@ namespace LobbyImprovements.LANDiscovery
 
         public new void JoinButton()
         {
-            LobbyCodes_LAN.JoinLobbyByIP(thisLobby.IPAddress, thisLobby.Port);
+            LobbyCodes_LAN.JoinLobbyByIP(thisLobby.IPAddress, thisLobby.Port, thisLobby);
         }
     }
 }

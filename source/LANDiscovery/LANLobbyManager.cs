@@ -353,6 +353,46 @@ namespace LobbyImprovements.LANDiscovery
     [HarmonyPatch]
     public class LANLobbyManager_InGame
     {
+        public static bool waitingForLobbyDataRefresh;
+        public static LANLobby currentLobby;
+        public static LANLobby GetLANLobby()
+        {
+            if (waitingForLobbyDataRefresh)
+                return null;
+            else
+                return currentLobby;
+        }
+        internal static async void UpdateCurrentLANLobby(LANLobby foundLobby = null, bool reset = false, bool startAClient = false)
+        {
+            if (foundLobby == null)
+            {
+                if (!LANLobbyManager_LobbyList.clientDiscovery)
+                    LANLobbyManager_LobbyList.clientDiscovery = new ClientDiscovery();
+                if (LANLobbyManager_LobbyList.clientDiscovery.isListening) return;
+
+                LANLobbyManager_LobbyList.clientDiscovery.listenPort = PluginLoader.lanDiscoveryPort.Value;
+                waitingForLobbyDataRefresh = true;
+                string lobbyIP = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
+                int lobbyPort = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port;
+                foundLobby = await LANLobbyManager_LobbyList.clientDiscovery.DiscoverSpecificLobbyAsync(lobbyIP, lobbyPort, 2f);
+            }
+            currentLobby = foundLobby;
+            if (foundLobby != null)
+            {
+                GameNetworkManager.Instance.steamLobbyName = currentLobby.LobbyName;
+            }
+            else
+            {
+                GameNetworkManager.Instance.steamLobbyName = "";
+            }
+            waitingForLobbyDataRefresh = false;
+
+            if (startAClient)
+            {
+                GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
+            }
+        }
+
         // [Client] Fix LAN Above Head Usernames
         [HarmonyPatch(typeof(NetworkSceneManager), "PopulateScenePlacedObjects")]
         [HarmonyPostfix]
@@ -375,7 +415,15 @@ namespace LobbyImprovements.LANDiscovery
             TextMeshProUGUI CrewHeaderText = __instance.menuContainer.transform.Find("PlayerList/Image/Header").GetComponentInChildren<TextMeshProUGUI>();
             if (CrewHeaderText != null)
             {
-                CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}):";
+                CrewHeaderText.fontSize = 16f;
+                if (!string.IsNullOrEmpty(GameNetworkManager.Instance.steamLobbyName))
+                {
+                    CrewHeaderText.text = $"{GameNetworkManager.Instance.steamLobbyName}\nPlayers: {(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}";
+                }
+                else
+                {
+                    CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}):";
+                }
             }
 
             // Copy the current lobby code (or ip if on lan)
@@ -389,7 +437,7 @@ namespace LobbyImprovements.LANDiscovery
                     LobbyCodeObj.name = "CopyCurrentLobbyCode";
 
                     TextMeshProUGUI LobbyCodeTextMesh = LobbyCodeObj.GetComponentInChildren<TextMeshProUGUI>();
-                    string defaultText = GameNetworkManager.Instance.disableSteam ? "> Copy IP Address" : "> Copy Lobby Code";
+                    string defaultText = GameNetworkManager.Instance.disableSteam ? "> Copy Lobby IP" : "> Copy Lobby ID";
                     LobbyCodeTextMesh.text = defaultText;
 
                     Button LobbyCodeButton = LobbyCodeObj.GetComponent<Button>();
