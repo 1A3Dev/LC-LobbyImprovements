@@ -5,13 +5,14 @@ using UnityEngine;
 using HarmonyLib;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
+using static Unity.Netcode.Transports.UTP.UnityTransport;
 
 namespace LobbyImprovements.LANDiscovery
 {
     public class ServerDiscovery : MonoBehaviour
     {
         private UdpClient udpClient;
-        internal bool isServerRunning = false;
+        public bool isServerRunning { get; private set; }
         private static LANLobby currentLobby = new LANLobby();
 
         public void StartServerDiscovery()
@@ -42,9 +43,11 @@ namespace LobbyImprovements.LANDiscovery
             if (!isServerRunning)
                 return;
 
+            currentLobby.LobbyName = GameNetworkManager.Instance.lobbyHostSettings?.lobbyName;
+            currentLobby.LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none";
             currentLobby.MemberCount = GameNetworkManager.Instance.connectedPlayers;
 
-            if (currentLobby.MemberCount >= PluginLoader.GetMaxPlayers())
+            if (!StartOfRound.Instance || !StartOfRound.Instance.inShipPhase || currentLobby.MemberCount >= PluginLoader.GetMaxPlayers())
                 return;
 
             string dataStr = JsonUtility.ToJson(currentLobby);
@@ -74,40 +77,55 @@ namespace LobbyImprovements.LANDiscovery
     public static class ServerDiscoveryPatches
     {
         public static ServerDiscovery serverDiscovery;
-        public static bool LobbyPublic = false;
 
-        [HarmonyPatch(typeof(MenuManager), "StartHosting")]
+        [HarmonyPatch(typeof(StartOfRound), "StartGame")]
         [HarmonyPostfix]
-        private static void MenuManager_StartHosting(MenuManager __instance)
+        private static void SOR_StartGame()
         {
-            LobbyPublic = __instance.hostSettings_LobbyPublic;
+            GameNetworkManager.Instance.SetLobbyJoinable(false);
         }
 
-        [HarmonyPatch(typeof(StartOfRound), "Start")]
+        [HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
         [HarmonyPostfix]
-        private static void OnStartServer()
+        private static void GNM_StartDisconnect()
         {
-            if (LobbyPublic && GameNetworkManager.Instance.disableSteam)
+            GameNetworkManager.Instance.SetLobbyJoinable(false);
+        }
+
+        [HarmonyPatch(typeof(GameNetworkManager), "SetLobbyJoinable")]
+        [HarmonyPrefix]
+        private static bool GNM_SetLobbyJoinable_Prefix()
+        {
+            return !GameNetworkManager.Instance.disableSteam;
+        }
+
+        [HarmonyPatch(typeof(GameNetworkManager), "SetLobbyJoinable")]
+        [HarmonyPostfix]
+        private static void GNM_SetLobbyJoinable_Postfix(bool joinable)
+        {
+            if (GameNetworkManager.Instance.disableSteam)
             {
-                if (!serverDiscovery)
+                ConnectionAddressData connectionData = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData;
+                if (joinable && connectionData.ServerListenAddress != "127.0.0.1")
                 {
-                    GameObject val = new GameObject("ServerDiscovery");
-                    serverDiscovery = val.AddComponent<ServerDiscovery>();
-                    val.hideFlags = (HideFlags)61;
-                    Object.DontDestroyOnLoad(val);
+                    if (NetworkManager.Singleton && NetworkManager.Singleton.IsServer)
+                    {
+                        if (!serverDiscovery)
+                        {
+                            GameObject val = new GameObject("ServerDiscovery");
+                            serverDiscovery = val.AddComponent<ServerDiscovery>();
+                            val.hideFlags = (HideFlags)61;
+                            Object.DontDestroyOnLoad(val);
+                        }
+
+                        if (!serverDiscovery.isServerRunning)
+                            serverDiscovery?.StartServerDiscovery();
+                    }
                 }
-
-                serverDiscovery?.StartServerDiscovery();
-            }
-        }
-
-        [HarmonyPatch(typeof(MenuManager), "Awake")]
-        [HarmonyPostfix]
-        private static void OnStopServer(MenuManager __instance)
-        {
-            if (!__instance.isInitScene && serverDiscovery && serverDiscovery.isServerRunning)
-            {
-                serverDiscovery.StopServerDiscovery();
+                else if (serverDiscovery && serverDiscovery.isServerRunning)
+                {
+                    serverDiscovery.StopServerDiscovery();
+                }
             }
         }
     }

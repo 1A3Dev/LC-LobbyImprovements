@@ -26,7 +26,7 @@ namespace LobbyImprovements.LANDiscovery
     {
         private UdpClient udpClient;
         public int listenPort = 47777;
-        internal bool isListening = false;
+        public bool isListening { get; private set; }
 
         private List<LANLobby> discoveredLobbies = new List<LANLobby>();
 
