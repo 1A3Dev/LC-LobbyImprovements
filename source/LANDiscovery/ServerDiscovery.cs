@@ -79,15 +79,9 @@ namespace LobbyImprovements.LANDiscovery
         public static ServerDiscovery serverDiscovery;
 
         [HarmonyPatch(typeof(StartOfRound), "StartGame")]
-        [HarmonyPostfix]
-        private static void SOR_StartGame()
-        {
-            GameNetworkManager.Instance.SetLobbyJoinable(false);
-        }
-
         [HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
         [HarmonyPostfix]
-        private static void GNM_StartDisconnect()
+        private static void Patch_StopServer()
         {
             GameNetworkManager.Instance.SetLobbyJoinable(false);
         }
@@ -105,24 +99,34 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                ConnectionAddressData connectionData = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData;
-                if (joinable && connectionData.ServerListenAddress != "127.0.0.1")
+                bool enableDiscovery = false;
+                if (joinable && NetworkManager.Singleton)
                 {
-                    if (NetworkManager.Singleton && NetworkManager.Singleton.IsServer)
+                    if (NetworkManager.Singleton.IsServer)
                     {
-                        if (!serverDiscovery)
+                        if (PluginLoader.setInviteOnly)
                         {
-                            GameObject val = new GameObject("ServerDiscovery");
-                            serverDiscovery = val.AddComponent<ServerDiscovery>();
-                            val.hideFlags = (HideFlags)61;
-                            Object.DontDestroyOnLoad(val);
+                            PluginLoader.setInviteOnly = false;
                         }
+                        else if (NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress != "127.0.0.1")
+                        {
+                            if (!serverDiscovery)
+                            {
+                                GameObject val = new GameObject("ServerDiscovery");
+                                serverDiscovery = val.AddComponent<ServerDiscovery>();
+                                val.hideFlags = (HideFlags)61;
+                                Object.DontDestroyOnLoad(val);
+                            }
 
-                        if (!serverDiscovery.isServerRunning)
-                            serverDiscovery?.StartServerDiscovery();
+                            if (!serverDiscovery.isServerRunning)
+                                serverDiscovery?.StartServerDiscovery();
+
+                            enableDiscovery = true;
+                        }
                     }
                 }
-                else if (serverDiscovery && serverDiscovery.isServerRunning)
+
+                if (!enableDiscovery && serverDiscovery && serverDiscovery.isServerRunning)
                 {
                     serverDiscovery.StopServerDiscovery();
                 }

@@ -237,20 +237,5 @@ namespace LobbyImprovements
 
             return (alreadyReplaced ? newInstructions : instructions).AsEnumerable();
         }
-
-        // Make the LAN warning only show once for each game startup
-        private static bool lanWarningShown = false;
-        [HarmonyPatch(typeof(MenuManager), "Start")]
-        [HarmonyPostfix]
-        private static void MenuManager_Start(MenuManager __instance)
-        {
-            if (!__instance.isInitScene && GameNetworkManager.Instance.disableSteam)
-            {
-                if (lanWarningShown)
-                    __instance.lanWarningContainer.SetActive(false);
-                else
-                    lanWarningShown = true;
-            }
-        }
     }
 }

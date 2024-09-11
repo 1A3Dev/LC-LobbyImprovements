@@ -22,6 +22,8 @@ namespace LobbyImprovements.LANDiscovery
 
         internal static ClientDiscovery clientDiscovery;
 
+        private static bool lanWarningShown = false;
+
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
         private static void MenuManager_Start(MenuManager __instance)
@@ -30,6 +32,12 @@ namespace LobbyImprovements.LANDiscovery
             {
                 __instance.lanButtonContainer?.SetActive(false);
                 __instance.joinCrewButtonContainer?.SetActive(true);
+
+                // Make the LAN warning only show once for each game startup
+                if (lanWarningShown)
+                    __instance.lanWarningContainer?.SetActive(false);
+                else
+                    lanWarningShown = true;
             }
         }
 
@@ -222,7 +230,12 @@ namespace LobbyImprovements.LANDiscovery
         {
             __instance.hostSettings_LobbyPublic = true;
             __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
-            __instance.privatePublicDescription.text = "PUBLIC means your game will be joinable by anyone on your network.";
+            if (PluginLoader.setInviteOnly)
+                __instance.privatePublicDescription.text = "IP ONLY means your game will be joinable by anyone who has the ip & port.";
+            else
+                __instance.privatePublicDescription.text = "PUBLIC means your game will be visible on the lobby list by anyone on your network.";
+            __instance.lanSetAllowRemoteButtonAnimator?.SetBool("isPressed", !PluginLoader.setInviteOnly);
+            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
         }
 
         [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
@@ -231,7 +244,8 @@ namespace LobbyImprovements.LANDiscovery
         {
             __instance.hostSettings_LobbyPublic = false;
             __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
-            __instance.privatePublicDescription.text = "PRIVATE means your game will only be joinable from your local machine.";
+            __instance.privatePublicDescription.text = "LOCALHOST means your game will only be joinable from your local machine.";
+            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", false);
         }
 
         [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
@@ -240,54 +254,27 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                __instance.hostSettings_LobbyPublic = setPublic;
-                __instance.lanSetLocalButtonAnimator.SetBool("isPressed", !setPublic);
-                __instance.lanSetAllowRemoteButtonAnimator.SetBool("isPressed", setPublic);
                 if (setPublic)
-                {
                     __instance.LAN_HostSetAllowRemoteConnections();
-                }
                 else
-                {
                     __instance.LAN_HostSetLocal();
+            }
+            else
+            {
+                PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
+                if (!setPublic)
+                {
+                    __instance.setPrivateButtonAnimator.SetBool("isPressed", !PluginLoader.setInviteOnly);
+                    if (PluginLoader.setInviteOnly)
+                        __instance.privatePublicDescription.text = "INVITE ONLY means you must send invites through Steam for players to join.";
+                    else
+                        __instance.privatePublicDescription.text = "FRIENDS ONLY means only friends or invited people can join.";
                 }
             }
-            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
+            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly);
         }
 
-        [HarmonyPatch(typeof(MenuManager), "ClickHostButton")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.First)]
-        private static void MenuManager_ClickHostButton(MenuManager __instance)
-        {
-            Transform lobbyHostOptions = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions");
-            if (lobbyHostOptions != null && lobbyHostOptions.transform.Find("LANOptions/AllowRemote") && GameNetworkManager.Instance.disableSteam)
-            {
-                Object.Destroy(lobbyHostOptions.transform.Find("LANOptions").gameObject);
-                GameObject OptionsNormal = lobbyHostOptions.transform.Find("OptionsNormal").gameObject;
-                GameObject menu = Object.Instantiate(OptionsNormal, OptionsNormal.transform.position, OptionsNormal.transform.rotation, OptionsNormal.transform.parent);
-                __instance.HostSettingsOptionsLAN = menu;
-                __instance.HostSettingsOptionsLAN.name = "LANOptions";
-
-                Transform accessRemoteBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Public");
-                __instance.lanSetAllowRemoteButtonAnimator = accessRemoteBtnParent.GetComponent<Animator>();
-                Button accessRemoteBtn = accessRemoteBtnParent.GetComponent<Button>();
-                accessRemoteBtn.onClick = new Button.ButtonClickedEvent();
-                accessRemoteBtn.onClick.AddListener(__instance.LAN_HostSetAllowRemoteConnections);
-                accessRemoteBtn.GetComponentInChildren<TextMeshProUGUI>().text = "Public";
-
-                Transform accessLocalBtnParent = __instance.HostSettingsOptionsLAN.transform.Find("Private");
-                __instance.lanSetLocalButtonAnimator = accessLocalBtnParent.GetComponent<Animator>();
-                Button accessLocalBtn = accessLocalBtnParent.GetComponent<Button>();
-                accessLocalBtn.onClick = new Button.ButtonClickedEvent();
-                accessLocalBtn.onClick.AddListener(__instance.LAN_HostSetLocal);
-                accessLocalBtnParent.GetComponentInChildren<TextMeshProUGUI>().text = "Private";
-
-                __instance.lobbyNameInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerNameField").GetComponent<TMP_InputField>();
-                __instance.lobbyTagInputField = __instance.HostSettingsOptionsLAN.transform.Find("ServerTagInputField").GetComponent<TMP_InputField>();
-            }
-        }
-
+        // Make the challenge leaderboard show your own stat whilst on LAN
         [HarmonyPatch(typeof(MenuManager), "EnableLeaderboardDisplay")]
         [HarmonyPostfix]
         private static void EnableLeaderboardDisplay(MenuManager __instance, bool enable)
@@ -355,6 +342,7 @@ namespace LobbyImprovements.LANDiscovery
     {
         public static bool waitingForLobbyDataRefresh;
         public static LANLobby currentLobby;
+
         public static LANLobby GetLANLobby()
         {
             if (waitingForLobbyDataRefresh)
@@ -362,6 +350,7 @@ namespace LobbyImprovements.LANDiscovery
             else
                 return currentLobby;
         }
+
         internal static async void UpdateCurrentLANLobby(LANLobby foundLobby = null, bool reset = false, bool startAClient = false)
         {
             if (foundLobby == null)
@@ -393,6 +382,32 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
+        internal static void CopyCurrentLobbyCode(TextMeshProUGUI textMesh, string defaultText)
+        {
+            string lobbyId = "";
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                if (GameNetworkManager.Instance.isHostingGame)
+                {
+                    lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
+                    if (lobbyId == "0.0.0.0")
+                    {
+                        lobbyId = LobbyCodes_LAN.GetGlobalIPAddress();
+                    }
+                }
+                else
+                {
+                    lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
+                }
+            }
+            else if (GameNetworkManager.Instance != null && GameNetworkManager.Instance.currentLobby.HasValue)
+            {
+                lobbyId = GameNetworkManager.Instance.currentLobby.Value.Id.Value.ToString();
+            }
+            LobbyCodes.CopyLobbyCodeToClipboard(lobbyId, textMesh, [defaultText, "Copied To Clipboard", "Invalid Code"]);
+        }
+
+
         // [Client] Fix LAN Above Head Usernames
         [HarmonyPatch(typeof(NetworkSceneManager), "PopulateScenePlacedObjects")]
         [HarmonyPostfix]
@@ -407,9 +422,129 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
+        [HarmonyPatch(typeof(QuickMenuManager), "KickUserFromServer")]
+        [HarmonyPostfix]
+        private static void QMM_KickUserFromServer(QuickMenuManager __instance, int playerObjId)
+        {
+            __instance.ConfirmKickPlayerText.text = "Kick out " + StartOfRound.Instance.allPlayerScripts[playerObjId].playerUsername.Substring(0, Mathf.Min(32, StartOfRound.Instance.allPlayerScripts[playerObjId].playerUsername.Length)) + "?";
+            __instance.ConfirmKickPlayerText.fontSize = 18f;
+        }
+
+        private static string copyDefaultText = "> Copy Lobby ID";
+        [HarmonyPatch(typeof(QuickMenuManager), "Start")]
+        [HarmonyPrefix]
+        private static void QMM_Start(QuickMenuManager __instance)
+        {
+            // Adds button to the ban confirmation to kick instead
+            if (__instance.ConfirmKickUserPanel)
+            {
+                Vector3 kickBtnScale = new Vector3(0.75f, 0.75f, 1f);
+                GameObject BanButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/Confirm")?.gameObject;
+                if (BanButtonObj)
+                {
+                    BanButtonObj.transform.localPosition = new Vector3(90f, -6f, 2f);
+                    BanButtonObj.transform.localScale = kickBtnScale;
+                    BanButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Ban";
+
+                    Button BanButton = BanButtonObj.GetComponent<Button>();
+                    BanButton.onClick = new Button.ButtonClickedEvent();
+                    BanButton.onClick.AddListener(() => {
+                        __instance.ConfirmKickUserFromServer();
+                        if (!GameNetworkManager.Instance.disableSteam)
+                        {
+                            ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                            if (!StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                            {
+                                StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
+                            }
+                        }
+                    });
+                }
+
+                GameObject KickButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/ConfirmKick")?.gameObject;
+                if (!KickButtonObj && BanButtonObj)
+                {
+                    KickButtonObj = Object.Instantiate(BanButtonObj.gameObject, BanButtonObj.transform.parent);
+                    KickButtonObj.name = "ConfirmKick";
+                    KickButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Kick";
+
+                    Button KickButton = KickButtonObj.GetComponent<Button>();
+                    KickButton.onClick = new Button.ButtonClickedEvent();
+                    KickButton.onClick.AddListener(() => {
+                        __instance.ConfirmKickUserFromServer();
+                        if (!GameNetworkManager.Instance.disableSteam)
+                        {
+                            ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                            StartOfRound.Instance.KickedClientIds.Remove(playerSteamId);
+                        }
+                    });
+                }
+                if (KickButtonObj)
+                {
+                    KickButtonObj.transform.localPosition = new Vector3(-90f, -6f, 2f);
+                    KickButtonObj.transform.localScale = kickBtnScale;
+                }
+
+                GameObject CancelButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/Deny")?.gameObject;
+                if (CancelButtonObj)
+                {
+                    CancelButtonObj.transform.localPosition = new Vector3(0f, -61f, 4f);
+                    CancelButtonObj.transform.localScale = kickBtnScale;
+                }
+            }
+
+            // Copy the current lobby code (or ip if on lan)
+            GameObject ResumeObj = __instance.menuContainer.transform.Find("MainButtons/Resume/")?.gameObject;
+            if (ResumeObj != null)
+            {
+                TextMeshProUGUI InviteButton = __instance.inviteFriendsTextAlpha?.GetComponentInChildren<TextMeshProUGUI>();
+                if (InviteButton != null && GameNetworkManager.Instance.disableSteam)
+                {
+                    copyDefaultText = GameNetworkManager.Instance.disableSteam ? "> Copy Lobby IP" : "> Copy Lobby ID";
+                    InviteButton.text = copyDefaultText;
+                }
+                else
+                {
+                    GameObject LobbyCodeObj = GameObject.Find("CopyCurrentLobbyCode");
+                    if (LobbyCodeObj == null)
+                    {
+                        LobbyCodeObj = Object.Instantiate(ResumeObj.gameObject, ResumeObj.transform.parent);
+                        LobbyCodeObj.name = "CopyCurrentLobbyCode";
+
+                        TextMeshProUGUI LobbyCodeTextMesh = LobbyCodeObj.GetComponentInChildren<TextMeshProUGUI>();
+                        copyDefaultText = GameNetworkManager.Instance.disableSteam ? "> Copy Lobby IP" : "> Copy Lobby ID";
+                        LobbyCodeTextMesh.text = copyDefaultText;
+
+                        Button LobbyCodeButton = LobbyCodeObj.GetComponent<Button>();
+                        LobbyCodeButton.onClick = new Button.ButtonClickedEvent();
+                        LobbyCodeButton.onClick.AddListener(() => CopyCurrentLobbyCode(LobbyCodeTextMesh, copyDefaultText));
+                    }
+
+                    RectTransform rect = LobbyCodeObj.GetComponent<RectTransform>();
+                    if (rect != null)
+                    {
+                        GameObject DebugMenu = __instance.menuContainer.transform.Find("DebugMenu")?.gameObject;
+                        if (DebugMenu != null && __instance.CanEnableDebugMenu())
+                        {
+                            LobbyCodeObj.transform.SetParent(DebugMenu.transform);
+                            rect.localPosition = new Vector3(125f, 185f, 0f);
+                            rect.localScale = new Vector3(1f, 1f, 1f);
+                        }
+                        else
+                        {
+                            LobbyCodeObj.transform.SetParent(ResumeObj.transform.parent);
+                            RectTransform resumeRect = ResumeObj.GetComponent<RectTransform>();
+                            rect.localPosition = resumeRect.localPosition + new Vector3(0f, 182f, 0f);
+                            rect.localScale = resumeRect.localScale;
+                        }
+                    }
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
         [HarmonyPostfix]
-        private static void OpenQuickMenu(QuickMenuManager __instance)
+        private static void QMM_OpenQuickMenu(QuickMenuManager __instance)
         {
             // Add the lobby player count to the pause menu
             TextMeshProUGUI CrewHeaderText = __instance.menuContainer.transform.Find("PlayerList/Image/Header").GetComponentInChildren<TextMeshProUGUI>();
@@ -425,69 +560,22 @@ namespace LobbyImprovements.LANDiscovery
                     CrewHeaderText.text = $"CREW ({(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}):";
                 }
             }
+        }
 
-            // Copy the current lobby code (or ip if on lan)
-            GameObject ResumeObj = __instance.menuContainer.transform.Find("MainButtons/Resume/")?.gameObject;
-            if (ResumeObj != null)
+
+        [HarmonyPatch(typeof(GameNetworkManager), "InviteFriendsUI")]
+        [HarmonyPrefix]
+        private static bool GNM_InviteFriendsUI(GameNetworkManager __instance)
+        {
+            if (__instance.disableSteam)
             {
-                GameObject LobbyCodeObj = GameObject.Find("CopyCurrentLobbyCode");
-                if (LobbyCodeObj == null)
-                {
-                    LobbyCodeObj = Object.Instantiate(ResumeObj.gameObject, ResumeObj.transform.parent);
-                    LobbyCodeObj.name = "CopyCurrentLobbyCode";
-
-                    TextMeshProUGUI LobbyCodeTextMesh = LobbyCodeObj.GetComponentInChildren<TextMeshProUGUI>();
-                    string defaultText = GameNetworkManager.Instance.disableSteam ? "> Copy Lobby IP" : "> Copy Lobby ID";
-                    LobbyCodeTextMesh.text = defaultText;
-
-                    Button LobbyCodeButton = LobbyCodeObj.GetComponent<Button>();
-                    LobbyCodeButton.onClick = new Button.ButtonClickedEvent();
-                    LobbyCodeButton.onClick.AddListener(() => {
-                        string lobbyId = "";
-                        if (GameNetworkManager.Instance.disableSteam)
-                        {
-                            if (GameNetworkManager.Instance.isHostingGame)
-                            {
-                                lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
-                                if (lobbyId == "0.0.0.0")
-                                {
-                                    lobbyId = LobbyCodes_LAN.GetGlobalIPAddress();
-                                }
-                            }
-                            else
-                            {
-                                lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
-                            }
-                        }
-                        else if (GameNetworkManager.Instance != null && GameNetworkManager.Instance.currentLobby.HasValue)
-                        {
-                            lobbyId = GameNetworkManager.Instance.currentLobby.Value.Id.Value.ToString();
-                        }
-                        LobbyCodes.CopyLobbyCodeToClipboard(lobbyId, LobbyCodeTextMesh, [defaultText, "Copied To Clipboard", "Invalid Code"]);
-                    });
-                }
-
-                RectTransform rect = LobbyCodeObj.GetComponent<RectTransform>();
-                if (rect == null)
-                {
-                    return;
-                }
-
-                GameObject DebugMenu = __instance.menuContainer.transform.Find("DebugMenu")?.gameObject;
-                if (DebugMenu != null && DebugMenu.activeSelf)
-                {
-                    LobbyCodeObj.transform.SetParent(DebugMenu.transform);
-                    rect.localPosition = new Vector3(125f, 185f, 0f);
-                    rect.localScale = new Vector3(1f, 1f, 1f);
-                }
-                else
-                {
-                    LobbyCodeObj.transform.SetParent(ResumeObj.transform.parent);
-                    RectTransform resumeRect = ResumeObj.GetComponent<RectTransform>();
-                    rect.localPosition = resumeRect.localPosition + new Vector3(0f, 182f, 0f);
-                    rect.localScale = resumeRect.localScale;
-                }
+                QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
+                TextMeshProUGUI LobbyCodeTextMesh = quickMenuManager.inviteFriendsTextAlpha?.GetComponentInChildren<TextMeshProUGUI>();
+                CopyCurrentLobbyCode(LobbyCodeTextMesh, copyDefaultText);
+                return false;
             }
+
+            return true;
         }
     }
 }
