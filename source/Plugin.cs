@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -105,6 +106,8 @@ namespace LobbyImprovements
             Assembly patches = Assembly.GetExecutingAssembly();
             harmony.PatchAll(patches);
 
+            StaticLogger.LogInfo("Patches Loaded");
+
             if (Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
                 Compatibility.LobbyCompatibility.Init();
@@ -202,8 +205,10 @@ namespace LobbyImprovements
         }
 
         // [Host] Notify the player that they were kicked
+        public static string kickReason = null;
         [HarmonyPatch(typeof(StartOfRound), "KickPlayer")]
         [HarmonyTranspiler]
+        [HarmonyPriority(Priority.First)]
         private static IEnumerable<CodeInstruction> StartOfRound_KickPlayer(IEnumerable<CodeInstruction> instructions)
         {
             var newInstructions = new List<CodeInstruction>();
@@ -218,8 +223,8 @@ namespace LobbyImprovements
                         foundClientId = true;
                         newInstructions.Add(instruction);
 
-                        CodeInstruction kickReason = new CodeInstruction(OpCodes.Ldstr, "You have been kicked.");
-                        newInstructions.Add(kickReason);
+                        CodeInstruction kickReasonInst = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(General_Patches), "kickReason"));
+                        newInstructions.Add(kickReasonInst);
 
                         continue;
                     }
@@ -236,6 +241,29 @@ namespace LobbyImprovements
             if (!alreadyReplaced) PluginLoader.StaticLogger.LogWarning("KickPlayer failed to add reason");
 
             return (alreadyReplaced ? newInstructions : instructions).AsEnumerable();
+        }
+
+        // [Host] Added kick reasons
+        public const string kickPrefixStr = "<size=12><color=red>Kicked From Lobby:<color=white>\n";
+        public const string banPrefixStr = "<size=12><color=red>Banned From Lobby:<color=white>\n";
+        public static Dictionary<ulong, string> playerBanReason = new Dictionary<ulong, string>();
+        [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
+        [HarmonyPostfix]
+        private static void Postfix(ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
+        {
+            if (request.ClientNetworkId == NetworkManager.Singleton.LocalClientId)
+                return;
+
+            if (response.Reason == "You cannot rejoin after being kicked.")
+            {
+                string @string = Encoding.ASCII.GetString(request.Payload);
+                string[] array = @string.Split(",");
+                ulong steamId = (ulong)Convert.ToInt64(array[1]);
+                if (playerBanReason.ContainsKey(steamId))
+                {
+                    response.Reason = playerBanReason[steamId];
+                }
+            }
         }
     }
 }

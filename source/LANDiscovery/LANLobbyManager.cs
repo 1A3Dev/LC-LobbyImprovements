@@ -10,6 +10,7 @@ using Unity.Netcode;
 using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using System.Text.RegularExpressions;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -426,11 +427,18 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPostfix]
         private static void QMM_KickUserFromServer(QuickMenuManager __instance, int playerObjId)
         {
-            __instance.ConfirmKickPlayerText.text = "Kick out " + StartOfRound.Instance.allPlayerScripts[playerObjId].playerUsername.Substring(0, Mathf.Min(32, StartOfRound.Instance.allPlayerScripts[playerObjId].playerUsername.Length)) + "?";
-            __instance.ConfirmKickPlayerText.fontSize = 18f;
+            string playerUsername = StartOfRound.Instance.allPlayerScripts[playerObjId].playerUsername;
+            __instance.ConfirmKickPlayerText.text = "Kick out " + playerUsername.Substring(0, Mathf.Min(32, playerUsername.Length)) + "?";
         }
 
+        public static TMP_InputField kickReasonInput;
         private static string copyDefaultText = "> Copy Lobby ID";
+
+        public static string SafeRichText(string text)
+        {
+            return Regex.Replace(text ?? "", "<.*?>", string.Empty).Trim();
+        }
+
         [HarmonyPatch(typeof(QuickMenuManager), "Start")]
         [HarmonyPrefix]
         private static void QMM_Start(QuickMenuManager __instance)
@@ -438,58 +446,104 @@ namespace LobbyImprovements.LANDiscovery
             // Adds button to the ban confirmation to kick instead
             if (__instance.ConfirmKickUserPanel)
             {
+                __instance.ConfirmKickPlayerText.fontSize = 18f;
+                __instance.ConfirmKickPlayerText.verticalAlignment = VerticalAlignmentOptions.Top;
+                __instance.ConfirmKickPlayerText.text = "Kick out Player?";
+
                 Vector3 kickBtnScale = new Vector3(0.75f, 0.75f, 1f);
-                GameObject BanButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/Confirm")?.gameObject;
-                if (BanButtonObj)
+                Transform panelObj = __instance.ConfirmKickUserPanel.transform.Find("Panel");
+                if (panelObj != null)
                 {
-                    BanButtonObj.transform.localPosition = new Vector3(90f, -6f, 2f);
-                    BanButtonObj.transform.localScale = kickBtnScale;
-                    BanButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Ban";
-
-                    Button BanButton = BanButtonObj.GetComponent<Button>();
-                    BanButton.onClick = new Button.ButtonClickedEvent();
-                    BanButton.onClick.AddListener(() => {
-                        __instance.ConfirmKickUserFromServer();
-                        if (!GameNetworkManager.Instance.disableSteam)
+                    GameObject KickReasonObj = panelObj.Find("Reason")?.gameObject;
+                    if (!panelObj.Find("Reason"))
+                    {
+                        GameObject TMP_JoinCode = GameObject.Find("Systems/UI/Canvas/QuickMenu/MainButtons/JoinCode");
+                        if (TMP_JoinCode)
                         {
-                            ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
-                            if (!StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                            KickReasonObj = Object.Instantiate(TMP_JoinCode, panelObj);
+                            KickReasonObj.name = "Reason";
+                            KickReasonObj.transform.localPosition = new Vector3(0f, 15f, -4f);
+                            KickReasonObj.transform.localScale = new Vector3(0.6f, 0.6f, 1f);
+                            KickReasonObj.GetComponent<Image>().color = new Color(0.59f, 0.27f, 0f, 0.4f);
+                            TextMeshProUGUI placeholder = KickReasonObj.transform.Find("Text Area/Placeholder").gameObject.GetComponent<TextMeshProUGUI>();
+                            placeholder.text = "No Reason Specified";
+                            placeholder.color = Color.white;
+                            KickReasonObj.transform.Find("Text Area/Text").gameObject.GetComponent<TextMeshProUGUI>().color = Color.white;
+                            KickReasonObj.SetActive(true);
+                            kickReasonInput = KickReasonObj.GetComponent<TMP_InputField>();
+                            kickReasonInput.characterLimit = 175;
+                        }
+                    }
+
+                    GameObject BanButtonObj = panelObj.Find("Confirm")?.gameObject;
+                    if (BanButtonObj)
+                    {
+                        BanButtonObj.transform.localPosition = new Vector3(90f, -25f, 2f);
+                        BanButtonObj.transform.localScale = kickBtnScale;
+                        BanButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Ban";
+
+                        Button BanButton = BanButtonObj.GetComponent<Button>();
+                        BanButton.onClick = new Button.ButtonClickedEvent();
+                        BanButton.onClick.AddListener(() =>
+                        {
+                            string reasonSafe = SafeRichText(kickReasonInput?.text);
+                            string fullBanReason = General_Patches.banPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
+                            General_Patches.kickReason = fullBanReason;
+                            __instance.ConfirmKickUserFromServer();
+                            General_Patches.kickReason = null;
+                            if (kickReasonInput)
+                                kickReasonInput.text = "";
+                            if (!GameNetworkManager.Instance.disableSteam)
                             {
-                                StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
+                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+
+                                if (!StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                                {
+                                    StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
+                                }
+
+                                General_Patches.playerBanReason.Remove(playerSteamId);
+                                General_Patches.playerBanReason.Add(playerSteamId, fullBanReason);
                             }
-                        }
-                    });
-                }
+                        });
+                    }
 
-                GameObject KickButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/ConfirmKick")?.gameObject;
-                if (!KickButtonObj && BanButtonObj)
-                {
-                    KickButtonObj = Object.Instantiate(BanButtonObj.gameObject, BanButtonObj.transform.parent);
-                    KickButtonObj.name = "ConfirmKick";
-                    KickButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Kick";
+                    GameObject KickButtonObj = panelObj.Find("ConfirmKick")?.gameObject;
+                    if (!KickButtonObj && BanButtonObj)
+                    {
+                        KickButtonObj = Object.Instantiate(BanButtonObj.gameObject, BanButtonObj.transform.parent);
+                        KickButtonObj.name = "ConfirmKick";
+                        KickButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "Kick";
 
-                    Button KickButton = KickButtonObj.GetComponent<Button>();
-                    KickButton.onClick = new Button.ButtonClickedEvent();
-                    KickButton.onClick.AddListener(() => {
-                        __instance.ConfirmKickUserFromServer();
-                        if (!GameNetworkManager.Instance.disableSteam)
+                        Button KickButton = KickButtonObj.GetComponent<Button>();
+                        KickButton.onClick = new Button.ButtonClickedEvent();
+                        KickButton.onClick.AddListener(() =>
                         {
-                            ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
-                            StartOfRound.Instance.KickedClientIds.Remove(playerSteamId);
-                        }
-                    });
-                }
-                if (KickButtonObj)
-                {
-                    KickButtonObj.transform.localPosition = new Vector3(-90f, -6f, 2f);
-                    KickButtonObj.transform.localScale = kickBtnScale;
-                }
+                            string reasonSafe = SafeRichText(kickReasonInput?.text);
+                            General_Patches.kickReason = General_Patches.kickPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
+                            __instance.ConfirmKickUserFromServer();
+                            General_Patches.kickReason = null;
+                            if (kickReasonInput)
+                                kickReasonInput.text = "";
+                            if (!GameNetworkManager.Instance.disableSteam)
+                            {
+                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                                StartOfRound.Instance.KickedClientIds.Remove(playerSteamId);
+                            }
+                        });
+                    }
+                    if (KickButtonObj)
+                    {
+                        KickButtonObj.transform.localPosition = new Vector3(-90f, -25f, 2f);
+                        KickButtonObj.transform.localScale = kickBtnScale;
+                    }
 
-                GameObject CancelButtonObj = __instance.ConfirmKickUserPanel.transform.Find("Panel/Deny")?.gameObject;
-                if (CancelButtonObj)
-                {
-                    CancelButtonObj.transform.localPosition = new Vector3(0f, -61f, 4f);
-                    CancelButtonObj.transform.localScale = kickBtnScale;
+                    GameObject CancelButtonObj = panelObj.Find("Deny")?.gameObject;
+                    if (CancelButtonObj)
+                    {
+                        CancelButtonObj.transform.localPosition = new Vector3(0f, -75f, 4f);
+                        CancelButtonObj.transform.localScale = kickBtnScale;
+                    }
                 }
             }
 
@@ -542,11 +596,9 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
-        [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
-        [HarmonyPostfix]
-        private static void QMM_OpenQuickMenu(QuickMenuManager __instance)
+        private static void UpdatePlayerListHeader(QuickMenuManager __instance)
         {
-            // Add the lobby player count to the pause menu
+            // Add the lobby name & player count to the pause menu
             TextMeshProUGUI CrewHeaderText = __instance.menuContainer.transform.Find("PlayerList/Image/Header").GetComponentInChildren<TextMeshProUGUI>();
             if (CrewHeaderText != null)
             {
@@ -562,6 +614,25 @@ namespace LobbyImprovements.LANDiscovery
             }
         }
 
+        [HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
+        [HarmonyPatch(typeof(QuickMenuManager), "RemoveUserFromPlayerList")]
+        [HarmonyPostfix]
+        private static void QMM_UpdateHeader(QuickMenuManager __instance, int playerObjectId)
+        {
+            UpdatePlayerListHeader(__instance);
+            //SessionTickets_Hosting.UpdateProfileIconColour(__instance.playerListSlots[playerObjectId]);
+        }
+
+        [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
+        [HarmonyPostfix]
+        private static void QMM_OpenQuickMenu(QuickMenuManager __instance)
+        {
+            UpdatePlayerListHeader(__instance);
+            //foreach (PlayerListSlot playerSlot in __instance.playerListSlots)
+            //{
+            //    SessionTickets_Hosting.UpdateProfileIconColour(playerSlot);
+            //}
+        }
 
         [HarmonyPatch(typeof(GameNetworkManager), "InviteFriendsUI")]
         [HarmonyPrefix]
@@ -576,6 +647,40 @@ namespace LobbyImprovements.LANDiscovery
             }
 
             return true;
+        }
+
+        // Block chat whilst the pause menu is open
+        [HarmonyPatch(typeof(HUDManager), "EnableChat_performed")]
+        [HarmonyPrefix]
+        private static bool HM_EnableChat()
+        {
+            QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
+            return !quickMenuManager || !quickMenuManager.isMenuOpen;
+        }
+
+        // Add the kick reason to the kick broadcast
+        [HarmonyPatch(typeof(HUDManager), "AddTextToChatOnServer")]
+        [HarmonyPrefix]
+        private static void AddTextToChatOnServer(ref string chatMessage, int playerId = -1)
+        {
+            QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
+            string reasonSafe = SafeRichText(kickReasonInput?.text);
+            if (quickMenuManager && !string.IsNullOrWhiteSpace(reasonSafe))
+            {
+                if (chatMessage == $"[playerNum{quickMenuManager.playerObjToKick}] was kicked." && playerId == -1)
+                {
+                    string kickType = "kicked";
+                    if (!GameNetworkManager.Instance.disableSteam)
+                    {
+                        ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[quickMenuManager.playerObjToKick].playerSteamId;
+                        if (StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                        {
+                            kickType = "banned";
+                        }
+                    }
+                    chatMessage = $"[playerNum{quickMenuManager.playerObjToKick}] was {kickType} for {reasonSafe}";
+                }
+            }
         }
     }
 }
