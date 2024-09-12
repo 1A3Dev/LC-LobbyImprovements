@@ -35,6 +35,9 @@
         <Reference Include="Assembly-CSharp-firstpass">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Assembly-CSharp-firstpass.dll</HintPath>
         </Reference>
+        <Reference Include="Facepunch Transport for Netcode for GameObjects">
+            <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch Transport for Netcode for GameObjects.dll</HintPath>
+        </Reference>
         <Reference Include="Facepunch.Steamworks.Win64">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch.Steamworks.Win64.dll</HintPath>
         </Reference>
@@ -70,6 +73,7 @@
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <DebugType>embedded</DebugType>
+        <DefineConstants>DEBUG</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
