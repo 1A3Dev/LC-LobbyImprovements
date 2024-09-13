@@ -180,9 +180,19 @@ namespace LobbyImprovements.LANDiscovery
                 {
                     componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName (1)")?.GetComponent<TextMeshProUGUI>();
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers (2)")?.GetComponent<TextMeshProUGUI>();
-                    TextMeshProUGUI chalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
-                    if (chalModeText != null)
-                        chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
+
+                    TextMeshProUGUI origChalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
+                    origChalModeText?.gameObject?.SetActive(false);
+
+                    GameObject chalModeTextObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
+                    chalModeTextObj.name = "ChalText";
+                    TextMeshProUGUI chalModeText = chalModeTextObj?.GetComponent<TextMeshProUGUI>();
+                    chalModeText.transform.localPosition = new Vector3(-25f, -4f, 0f);
+                    chalModeText.transform.localScale = new Vector3(1f, 1f, 1f);
+                    chalModeText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                    chalModeText.color = Color.magenta;
+                    chalModeText.alpha = 0.4f;
+                    chalModeText.text = "CHALLENGE MODE";
                 }
                 else
                 {
@@ -207,9 +217,11 @@ namespace LobbyImprovements.LANDiscovery
                 Button JoinButton = componentInChildren.transform.Find("JoinButton")?.GetComponent<Button>();
                 if (JoinButton && !componentInChildren.transform.Find("CopyCodeButton"))
                 {
+                    JoinButton.transform.localPosition = new Vector3(405f, -8.5f, -4.1f);
+                    JoinButton.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
                     JoinButton.onClick = new Button.ButtonClickedEvent();
                     JoinButton.onClick.AddListener(componentInChildren.JoinButton);
-                    LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}", ["Copy IP", "Copied", "Invalid"]);
+                    //LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}", ["Copy IP", "Copied", "Invalid"]);
                 }
 
                 componentInChildren.thisLobby = lobbyList[i];
@@ -416,7 +428,8 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
+                // Fix for billboards showing as Player # with no number in LAN (base game issue)
+                foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts)
                 {
                     newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
                 }
@@ -502,8 +515,8 @@ namespace LobbyImprovements.LANDiscovery
                                     StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
                                 }
 
-                                General_Patches.playerBanReason.Remove(playerSteamId);
-                                General_Patches.playerBanReason.Add(playerSteamId, fullBanReason);
+                                General_Patches.cachedBanReasons.Remove(playerSteamId);
+                                General_Patches.cachedBanReasons.Add(playerSteamId, fullBanReason);
                             }
                         });
                     }

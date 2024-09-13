@@ -35,7 +35,8 @@ namespace LobbyImprovements
         internal static ManualLogSource StaticLogger { get; private set; }
         internal static ConfigFile StaticConfig { get; private set; }
 
-        public static ConfigEntry<bool> steamSessionTokenKick;
+        public static ConfigEntry<bool> steamSessionKickEnabled;
+        public static ConfigEntry<int> steamSessionKickDelay;
 
         public static ConfigEntry<bool> recentlyPlayedWithOrbit;
 
@@ -73,7 +74,18 @@ namespace LobbyImprovements
             StaticLogger = Logger;
             StaticConfig = Config;
 
-            steamSessionTokenKick = StaticConfig.Bind("General", "Secure Lobby", false, "Should players that have an invalid steam session token be kicked?");
+            steamSessionKickEnabled = StaticConfig.Bind("Secure Lobby", "Enabled", false, "Should players without a valid steam session token be kicked?");
+            steamSessionKickDelay = StaticConfig.Bind("Secure Lobby", "Connect Kick Delay", 3, new ConfigDescription("When someone connects, how long should they have to submit a steam session token before being kicked?", new AcceptableValueRange<int>(1, 30)));
+            steamSessionKickEnabled.SettingChanged += (sender, args) =>
+            {
+                if (GameNetworkManager.Instance && !GameNetworkManager.Instance.disableSteam)
+                {
+                    if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
+                    {
+                        GameNetworkManager.Instance.currentLobby.Value.SetData("secure", steamSessionKickEnabled.Value ? "t" : "f");
+                    }
+                }
+            };
 
             recentlyPlayedWithOrbit = StaticConfig.Bind("Recent Players", "Enabled In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
@@ -189,21 +201,48 @@ namespace LobbyImprovements
             LobbySlot[] lobbySlots = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
             foreach (LobbySlot lobbySlot in lobbySlots)
             {
-                lobbySlot.playerCount.text = string.Format("{0} / {1}", lobbySlot.thisLobby.MemberCount, lobbySlot.thisLobby.MaxMembers);
+                lobbySlot.playerCount.text = $"{lobbySlot.thisLobby.MemberCount} / {lobbySlot.thisLobby.MaxMembers}";
 
                 // Add the lobby code copy button
                 Button JoinButton = lobbySlot.transform.Find("JoinButton")?.GetComponent<Button>();
                 if (JoinButton && !lobbySlot.transform.Find("CopyCodeButton"))
                 {
-                    LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, lobbySlot.lobbyId.Value.ToString(), ["Copy ID", "Copied", "Invalid"]);
+                    JoinButton.transform.localPosition = new Vector3(405f, -8.5f, -4.1f);
+                    JoinButton.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
+                    //LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, lobbySlot.lobbyId.Value.ToString(), ["Copy ID", "Copied", "Invalid"]);
                 }
 
                 // Move the text for challenge moon lobbies
                 if (lobbySlot.thisLobby.GetData("chal") == "t")
                 {
-                    TextMeshProUGUI chalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
-                    if (chalModeText != null)
-                        chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
+                    TextMeshProUGUI origChalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
+                    origChalModeText?.gameObject?.SetActive(false);
+
+                    GameObject chalModeTextObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
+                    chalModeTextObj.name = "ChalText";
+                    TextMeshProUGUI chalModeText = chalModeTextObj?.GetComponent<TextMeshProUGUI>();
+                    chalModeText.transform.localPosition = new Vector3(-25f, -4f, 0f);
+                    chalModeText.transform.localScale = new Vector3(1f, 1f, 1f);
+                    chalModeText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                    chalModeText.color = Color.magenta;
+                    chalModeText.alpha = 0.4f;
+                    chalModeText.text = "CHALLENGE MODE";
+                }
+
+                if (lobbySlot.thisLobby.GetData("secure") == "t")
+                {
+                    GameObject secureTextObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
+                    secureTextObj.name = "SecureText";
+                    TextMeshProUGUI secureText = secureTextObj?.GetComponent<TextMeshProUGUI>();
+                    if (secureText != null)
+                    {
+                        secureText.transform.localPosition = new Vector3(-25f, -15f, 0f);
+                        secureText.transform.localScale = new Vector3(1f, 1f, 1f);
+                        secureText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                        secureText.color = Color.green;
+                        secureText.alpha = 0.4f;
+                        secureText.text = "SECURE: \U00002713";
+                    }
                 }
             }
         }
@@ -250,7 +289,7 @@ namespace LobbyImprovements
         // [Host] Added kick reasons
         public const string kickPrefixStr = "<size=12><color=red>Kicked From Lobby:<color=white>\n";
         public const string banPrefixStr = "<size=12><color=red>Banned From Lobby:<color=white>\n";
-        public static Dictionary<ulong, string> playerBanReason = new Dictionary<ulong, string>();
+        public static Dictionary<ulong, string> cachedBanReasons = new Dictionary<ulong, string>();
         [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
         [HarmonyPostfix]
         private static void Postfix(ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
@@ -263,9 +302,9 @@ namespace LobbyImprovements
                 string @string = Encoding.ASCII.GetString(request.Payload);
                 string[] array = @string.Split(",");
                 ulong steamId = (ulong)Convert.ToInt64(array[1]);
-                if (playerBanReason.ContainsKey(steamId))
+                if (cachedBanReasons.ContainsKey(steamId))
                 {
-                    response.Reason = playerBanReason[steamId];
+                    response.Reason = cachedBanReasons[steamId];
                 }
             }
         }
