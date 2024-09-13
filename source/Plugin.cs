@@ -35,6 +35,8 @@ namespace LobbyImprovements
         internal static ManualLogSource StaticLogger { get; private set; }
         internal static ConfigFile StaticConfig { get; private set; }
 
+        public static ConfigEntry<bool> steamSessionTokenKick;
+
         public static ConfigEntry<bool> recentlyPlayedWithOrbit;
 
         public static ConfigEntry<bool> lobbyNameFilterEnabled;
@@ -70,6 +72,8 @@ namespace LobbyImprovements
             Instance = this;
             StaticLogger = Logger;
             StaticConfig = Config;
+
+            steamSessionTokenKick = StaticConfig.Bind("General", "Secure Lobby", false, "Should players that have an invalid steam session token be kicked?");
 
             recentlyPlayedWithOrbit = StaticConfig.Bind("Recent Players", "Enabled In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
