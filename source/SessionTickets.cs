@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -400,13 +401,13 @@ namespace LobbyImprovements
             {
                 int writeSize = FastBufferWriter.GetWriteSize(true) +
                     FastBufferWriter.GetWriteSize((int)__instance.playerClientId) +
-                    FastBufferWriter.GetWriteSize(GameNetworkManager.Instance.username);
+                    FastBufferWriter.GetWriteSize(PluginLoader.lanPlayerName.Value);
                 var writer = new FastBufferWriter(writeSize, Allocator.Temp);
                 using (writer)
                 {
                     writer.WriteValueSafe(true);
                     writer.WriteValueSafe((int)__instance.playerClientId);
-                    writer.WriteValueSafe(GameNetworkManager.Instance.username);
+                    writer.WriteValueSafe(PluginLoader.lanPlayerName.Value);
                     NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_SV_BeginAuthSession", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
                 }
             }
@@ -433,24 +434,23 @@ namespace LobbyImprovements
 
             if (!__instance.disableSteam)
             {
-                if (!__instance.isHostingGame)
+                currentTicket?.Cancel();
+
+                foreach (LISession authSession in SessionTickets_Hosting.activeSessions)
                 {
-                    currentTicket?.Cancel();
-                }
-                else
-                {
-                    foreach (LISession authSession in SessionTickets_Hosting.activeSessions)
-                    {
-                        SteamUser.EndAuthSession(authSession.steamId);
-                    }
-                    SessionTickets_Hosting.activeSessions.Clear();
+                    SteamUser.EndAuthSession(authSession.steamId);
                 }
             }
+
+            SessionTickets_Hosting.activeSessions.Clear();
         }
+
         [HarmonyPatch(typeof(StartOfRound), "OnPlayerDC")]
         [HarmonyPrefix]
         private static void OnPlayerDC(ulong clientId)
         {
+            playerInfoList.RemoveAll(x => x.actualClientId == clientId);
+
             if (!GameNetworkManager.Instance.disableSteam)
             {
                 LISession authSession = SessionTickets_Hosting.activeSessions.Find(x => x.actualClientId == clientId);
@@ -460,6 +460,19 @@ namespace LobbyImprovements
                     SteamUser.EndAuthSession(authSession.steamId);
                     SessionTickets_Hosting.activeSessions.Remove(authSession);
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(StartOfRound), "waitFrameBeforeFindingUsername")]
+        [HarmonyPostfix]
+        private static IEnumerator waitFrameBeforeFindingUsername(IEnumerator result)
+        {
+            while (result.MoveNext())
+                yield return result.Current;
+
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                PluginLoader.lanPlayerName.Value = ES3.Load<string>("PlayerName", "LCGeneralSaveData", "PlayerName");
             }
         }
     }

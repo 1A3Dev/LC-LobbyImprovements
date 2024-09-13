@@ -46,6 +46,7 @@ namespace LobbyImprovements
         public static ConfigEntry<string> lobbyNameFilterBlacklist;
         public static string[] lobbyNameParsedBlacklist;
 
+        public static ConfigEntry<string> lanPlayerName;
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
 
@@ -114,6 +115,13 @@ namespace LobbyImprovements
                 UpdateLobbyNameFilter();
             };
             UpdateLobbyNameFilter();
+
+            lanPlayerName = StaticConfig.Bind("LAN", "Player Name", "PlayerName", "What is your player name?");
+            lanPlayerName.SettingChanged += (sender, args) =>
+            {
+                ES3.Save<string>("PlayerName", lanPlayerName.Value, "LCGeneralSaveData");
+            };
+            lanPlayerName.Value = ES3.Load<string>("PlayerName", "LCGeneralSaveData", "PlayerName");
 
             AcceptableValueRange<int> acceptablePortRange = new AcceptableValueRange<int>(1, 65535);
             lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a lobby", acceptablePortRange));
@@ -193,7 +201,7 @@ namespace LobbyImprovements
 
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
         [HarmonyPostfix]
-        private static IEnumerator Postfix(IEnumerator result)
+        private static IEnumerator loadLobbyListAndFilter(IEnumerator result)
         {
             while (result.MoveNext())
                 yield return result.Current;
@@ -286,6 +294,15 @@ namespace LobbyImprovements
             return (alreadyReplaced ? newInstructions : instructions).AsEnumerable();
         }
 
+        // Fix none of the lobby types showing as selected after closing the leaderboard
+        //[HarmonyPatch(typeof(MenuManager), "EnableLeaderboardDisplay")]
+        //[HarmonyPostfix]
+        //private static void MM_EnableLeaderboardDisplay(MenuManager __instance, bool enable)
+        //{
+        //    if (!enable)
+        //        __instance.HostSetLobbyPublic(__instance.hostSettings_LobbyPublic);
+        //}
+
         // [Host] Added kick reasons
         public const string kickPrefixStr = "<size=12><color=red>Kicked From Lobby:<color=white>\n";
         public const string banPrefixStr = "<size=12><color=red>Banned From Lobby:<color=white>\n";
@@ -306,6 +323,18 @@ namespace LobbyImprovements
                 {
                     response.Reason = cachedBanReasons[steamId];
                 }
+            }
+        }
+
+        public static int debugConnectedPlayers = -1;
+        [HarmonyPatch(typeof(StartOfRound), "Update")]
+        [HarmonyPostfix]
+        private static void SOR_Update(StartOfRound __instance, bool enable)
+        {
+            if (NetworkManager.Singleton && NetworkManager.Singleton.IsServer && GameNetworkManager.Instance.connectedPlayers != debugConnectedPlayers)
+            {
+                debugConnectedPlayers = GameNetworkManager.Instance.connectedPlayers;
+                PluginLoader.StaticLogger.LogInfo($"[Connected Players] GNM: {debugConnectedPlayers} | SOR: {__instance.connectedPlayersAmount}");
             }
         }
     }
