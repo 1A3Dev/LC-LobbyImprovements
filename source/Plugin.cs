@@ -329,7 +329,7 @@ namespace LobbyImprovements
         public static int debugConnectedPlayers = -1;
         [HarmonyPatch(typeof(StartOfRound), "Update")]
         [HarmonyPostfix]
-        private static void SOR_Update(StartOfRound __instance, bool enable)
+        private static void SOR_Update(StartOfRound __instance)
         {
             if (NetworkManager.Singleton && NetworkManager.Singleton.IsServer && GameNetworkManager.Instance.connectedPlayers != debugConnectedPlayers)
             {

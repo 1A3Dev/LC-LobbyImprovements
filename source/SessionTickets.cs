@@ -463,7 +463,7 @@ namespace LobbyImprovements
             }
         }
 
-        [HarmonyPatch(typeof(StartOfRound), "waitFrameBeforeFindingUsername")]
+        [HarmonyPatch(typeof(GameNetworkManager), "waitFrameBeforeFindingUsername")]
         [HarmonyPostfix]
         private static IEnumerator waitFrameBeforeFindingUsername(IEnumerator result)
         {
