@@ -15,30 +15,30 @@ using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
 {
-    public enum LIBeginAuthResult
-    {
-        None = -1,
-        OK,
-        InvalidTicket,
-        DuplicateRequest,
-        InvalidVersion,
-        GameMismatch,
-        ExpiredTicket
-    }
-    public enum LIAuthResponse
-    {
-        None = -1,
-        OK,
-        UserNotConnectedToSteam,
-        NoLicenseOrExpired,
-        VACBanned,
-        LoggedInElseWhere,
-        VACCheckTimedOut,
-        AuthTicketCanceled,
-        AuthTicketInvalidAlreadyUsed,
-        AuthTicketInvalid,
-        PublisherIssuedBan
-    }
+    //public enum LIBeginAuthResult
+    //{
+    //    None = -1,
+    //    OK,
+    //    InvalidTicket,
+    //    DuplicateRequest,
+    //    InvalidVersion,
+    //    GameMismatch,
+    //    ExpiredTicket
+    //}
+    //public enum LIAuthResponse
+    //{
+    //    None = -1,
+    //    OK,
+    //    UserNotConnectedToSteam,
+    //    NoLicenseOrExpired,
+    //    VACBanned,
+    //    LoggedInElseWhere,
+    //    VACCheckTimedOut,
+    //    AuthTicketCanceled,
+    //    AuthTicketInvalidAlreadyUsed,
+    //    AuthTicketInvalid,
+    //    PublisherIssuedBan
+    //}
     public class LISession {
         public ulong actualClientId;
         public SteamId steamId;
