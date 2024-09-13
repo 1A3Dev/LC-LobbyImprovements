@@ -136,7 +136,7 @@ namespace LobbyImprovements
                     });
 
                     response = SteamUser.BeginAuthSession(ticketData, steamId);
-                    PluginLoader.StaticLogger.LogInfo($"[Auth_BeginSession]: {response}");
+                    PluginLoader.StaticLogger.LogInfo($"[SteamUser.BeginAuthSession] {steamId}: {response}");
 
                     //int foundIndex = activeSessions.FindIndex(t => t.actualClientId == steamId);
                     //if (foundIndex != -1)
@@ -175,7 +175,7 @@ namespace LobbyImprovements
                 //activeSessions[foundIndex].authResponse = (LIAuthResponse)(int)response;
 
                 if (response != AuthResponse.AuthTicketCanceled)
-                    PluginLoader.StaticLogger.LogInfo($"[Auth_ValidateTicket] {steamId}: {response}");
+                    PluginLoader.StaticLogger.LogInfo($"[SteamUser.OnValidateAuthTicketResponse] {steamId}: {response}");
 
                 if (response != AuthResponse.OK && PluginLoader.steamSessionKickEnabled.Value && NetworkManager.ServerClientId != activeSessions[foundIndex].actualClientId)
                 {
@@ -379,7 +379,7 @@ namespace LobbyImprovements
             if (!GameNetworkManager.Instance.disableSteam)
             {
                 currentTicket = SteamUser.GetAuthSessionTicket();
-                PluginLoader.StaticLogger.LogInfo($"[Auth_GetAuthSessionTicket]: {currentTicket.Handle}");
+                PluginLoader.StaticLogger.LogInfo($"[SteamUser.GetAuthSessionTicket] {SteamClient.SteamId.Value}: {currentTicket.Handle}");
                 int writeSize = FastBufferWriter.GetWriteSize(false) +
                     FastBufferWriter.GetWriteSize(currentTicket.Data.Length) +
                     FastBufferWriter.GetWriteSize(currentTicket.Data) +
@@ -419,7 +419,7 @@ namespace LobbyImprovements
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_SV_BeginAuthSession");
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceivePlayerInfo");
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceiveAllPlayerInfo");
-                PluginLoader.StaticLogger.LogInfo("[Auth] Unregistered Named Message Handlers");
+                PluginLoader.StaticLogger.LogInfo("Unregistered Named Message Handlers");
             }
         }
 
@@ -454,6 +454,7 @@ namespace LobbyImprovements
                 LISession authSession = SessionTickets_Hosting.activeSessions.Find(x => x.actualClientId == clientId);
                 if (authSession != null)
                 {
+                    PluginLoader.StaticLogger.LogInfo($"[SteamUser.EndAuthSession] {authSession.steamId}");
                     SteamUser.EndAuthSession(authSession.steamId);
                     SessionTickets_Hosting.activeSessions.Remove(authSession);
                 }

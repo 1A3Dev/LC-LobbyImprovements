@@ -75,7 +75,7 @@ namespace LobbyImprovements
             StaticConfig = Config;
 
             steamSessionKickEnabled = StaticConfig.Bind("Secure Lobby", "Enabled", false, "Should players without a valid steam session token be kicked?");
-            steamSessionKickDelay = StaticConfig.Bind("Secure Lobby", "Connect Kick Delay", 3, new ConfigDescription("When someone connects, how long should they have to submit a steam session token before being kicked?", new AcceptableValueRange<int>(1, 30)));
+            steamSessionKickDelay = StaticConfig.Bind("Secure Lobby", "Connect Kick Delay", 2, new ConfigDescription("When someone connects, how long should they have to submit a steam session token before being kicked?", new AcceptableValueRange<int>(1, 30)));
             steamSessionKickEnabled.SettingChanged += (sender, args) =>
             {
                 if (GameNetworkManager.Instance && !GameNetworkManager.Instance.disableSteam)
