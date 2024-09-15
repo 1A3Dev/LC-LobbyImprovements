@@ -1,6 +1,5 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
-using LobbyImprovements.LANDiscovery;
 using Netcode.Transports.Facepunch;
 using Newtonsoft.Json;
 using Steamworks;

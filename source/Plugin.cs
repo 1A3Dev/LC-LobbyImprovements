@@ -11,7 +11,6 @@ using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using LobbyImprovements.LANDiscovery;
 using Steamworks;
 using TMPro;
 using Unity.Netcode;
@@ -51,16 +50,16 @@ namespace LobbyImprovements
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
 
-        public static string lobbyPassword = "";
+        public static string lobbyPassword = null;
 
         public static void SetLobbyPassword(string password)
         {
-            lobbyPassword = password;
+            lobbyPassword = string.IsNullOrWhiteSpace(password) ? null : password;
             if (GameNetworkManager.Instance && !GameNetworkManager.Instance.disableSteam)
             {
                 if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
                 {
-                    if (!string.IsNullOrWhiteSpace(lobbyPassword))
+                    if (lobbyPassword != null)
                         GameNetworkManager.Instance.currentLobby.Value.SetData("password", "t");
                     else
                         GameNetworkManager.Instance.currentLobby.Value.DeleteData("password");
@@ -334,6 +333,11 @@ namespace LobbyImprovements
                 SessionTickets_Client.currentTicket = SteamUser.GetAuthSessionTicket();
                 newData.Add($"steamticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
             }
+
+            if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
+                newData.Add($"password:{PluginLoader.lobbyPassword}");
+            else
+                newData.Add($"password:");
 
             string newString = string.Join(',', newData);
             //PluginLoader.StaticLogger.LogInfo(newString);
