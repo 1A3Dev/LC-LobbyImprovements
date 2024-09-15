@@ -99,13 +99,12 @@ namespace LobbyImprovements
             {
                 __instance.lobbyHostSettings.isLobbyPublic = false;
                 lobby.SetPrivate();
-                lobby.SetData("inviteOnly", "true");
-                lobby.SetData("lobbyType", "Private");
             }
-            else
-            {
-                lobby.SetData("lobbyType", __instance.lobbyHostSettings.isLobbyPublic ? "Public" : "Friends Only");
-            }
+
+            if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
+                lobby.SetData("password", "t");
+            if (PluginLoader.steamSecureLobby.Value)
+                lobby.SetData("secure", "t");
         }
 
         [HarmonyPatch(typeof(QuickMenuManager), "NonHostPlayerSlotsEnabled")]

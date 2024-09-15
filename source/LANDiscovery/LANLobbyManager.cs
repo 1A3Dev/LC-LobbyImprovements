@@ -200,6 +200,22 @@ namespace LobbyImprovements.LANDiscovery
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers")?.GetComponent<TextMeshProUGUI>();
                 }
 
+                if (lobbyList[i].IsSecure)
+                {
+                    GameObject secureTextObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
+                    secureTextObj.name = "SecureText";
+                    TextMeshProUGUI secureText = secureTextObj?.GetComponent<TextMeshProUGUI>();
+                    if (secureText != null)
+                    {
+                        secureText.transform.localPosition = new Vector3(-25f, -15f, 0f);
+                        secureText.transform.localScale = new Vector3(1f, 1f, 1f);
+                        secureText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                        secureText.color = Color.green;
+                        secureText.alpha = 0.4f;
+                        secureText.text = "SECURE: \U00002713";
+                    }
+                }
+
                 if (componentInChildren.LobbyName)
                     componentInChildren.LobbyName.text = lobbyName.Substring(0, Mathf.Min(lobbyName.Length, 40));
 
@@ -380,13 +396,9 @@ namespace LobbyImprovements.LANDiscovery
             }
             currentLobby = foundLobby;
             if (foundLobby != null)
-            {
                 GameNetworkManager.Instance.steamLobbyName = currentLobby.LobbyName;
-            }
             else
-            {
                 GameNetworkManager.Instance.steamLobbyName = "";
-            }
             waitingForLobbyDataRefresh = false;
 
             if (startAClient)
@@ -499,6 +511,12 @@ namespace LobbyImprovements.LANDiscovery
                         BanButton.onClick = new Button.ButtonClickedEvent();
                         BanButton.onClick.AddListener(() =>
                         {
+                            ulong clientId = 0;
+                            if (!GameNetworkManager.Instance.disableSteam)
+                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                            else
+                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].actualClientId;
+
                             string reasonSafe = SafeRichText(kickReasonInput?.text);
                             string fullBanReason = General_Patches.banPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
                             General_Patches.kickReason = fullBanReason;
@@ -506,17 +524,23 @@ namespace LobbyImprovements.LANDiscovery
                             General_Patches.kickReason = null;
                             if (kickReasonInput)
                                 kickReasonInput.text = "";
+
                             if (!GameNetworkManager.Instance.disableSteam)
                             {
-                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                                if (!StartOfRound.Instance.KickedClientIds.Contains(clientId))
+                                    StartOfRound.Instance.KickedClientIds.Add(clientId);
 
-                                if (!StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                                General_Patches.steamBanReasons.Remove(clientId);
+                                General_Patches.steamBanReasons.Add(clientId, fullBanReason);
+                            }
+                            else
+                            {
+                                int lanPlayerIndex = PlayerManager.sv_lanPlayers.FindIndex(x => x.actualClientId == clientId);
+                                if (lanPlayerIndex != -1)
                                 {
-                                    StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
+                                    PlayerManager.sv_lanPlayers[lanPlayerIndex].banned = true;
+                                    PlayerManager.sv_lanPlayers[lanPlayerIndex].banReason = fullBanReason;
                                 }
-
-                                General_Patches.cachedBanReasons.Remove(playerSteamId);
-                                General_Patches.cachedBanReasons.Add(playerSteamId, fullBanReason);
                             }
                         });
                     }
@@ -532,16 +556,18 @@ namespace LobbyImprovements.LANDiscovery
                         KickButton.onClick = new Button.ButtonClickedEvent();
                         KickButton.onClick.AddListener(() =>
                         {
+                            ulong steamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
                             string reasonSafe = SafeRichText(kickReasonInput?.text);
                             General_Patches.kickReason = General_Patches.kickPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
                             __instance.ConfirmKickUserFromServer();
                             General_Patches.kickReason = null;
                             if (kickReasonInput)
                                 kickReasonInput.text = "";
+
                             if (!GameNetworkManager.Instance.disableSteam)
                             {
-                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
-                                StartOfRound.Instance.KickedClientIds.Remove(playerSteamId);
+                                StartOfRound.Instance.KickedClientIds.Remove(steamId);
+                                General_Patches.steamBanReasons.Remove(steamId);
                             }
                         });
                     }
@@ -616,7 +642,7 @@ namespace LobbyImprovements.LANDiscovery
             if (CrewHeaderText != null)
             {
                 CrewHeaderText.fontSize = 16f;
-                if (!string.IsNullOrEmpty(GameNetworkManager.Instance.steamLobbyName))
+                if (!string.IsNullOrWhiteSpace(GameNetworkManager.Instance.steamLobbyName))
                 {
                     CrewHeaderText.text = $"{GameNetworkManager.Instance.steamLobbyName}\nPlayers: {(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}";
                 }

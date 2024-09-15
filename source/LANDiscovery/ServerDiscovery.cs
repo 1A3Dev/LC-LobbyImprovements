@@ -27,7 +27,8 @@ namespace LobbyImprovements.LANDiscovery
                     LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none",
                     MemberCount = GameNetworkManager.Instance.connectedPlayers,
                     MaxMembers = PluginLoader.GetMaxPlayers(),
-                    IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile"
+                    IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile",
+                    IsSecure = PluginLoader.lanSecureLobby.Value,
                 };
                 LANLobbyManager_InGame.UpdateCurrentLANLobby(currentLobby);
 
@@ -46,6 +47,8 @@ namespace LobbyImprovements.LANDiscovery
             currentLobby.LobbyName = GameNetworkManager.Instance.lobbyHostSettings?.lobbyName;
             currentLobby.LobbyTag = GameNetworkManager.Instance.lobbyHostSettings?.serverTag ?? "none";
             currentLobby.MemberCount = GameNetworkManager.Instance.connectedPlayers;
+            if (currentLobby.MemberCount <= 1)
+                currentLobby.IsSecure = PluginLoader.lanSecureLobby.Value;
 
             if (!StartOfRound.Instance || !StartOfRound.Instance.inShipPhase || currentLobby.MemberCount >= PluginLoader.GetMaxPlayers())
                 return;
