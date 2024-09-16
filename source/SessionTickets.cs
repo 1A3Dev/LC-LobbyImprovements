@@ -372,12 +372,5 @@ namespace LobbyImprovements
                 }
             }
         }
-
-        [HarmonyPatch(typeof(FacepunchTransport), "Awake")]
-        [HarmonyPrefix]
-        private static void FacepunchTransport_Awake(ref uint ___steamAppId)
-        {
-            ___steamAppId = 480;
-        }
     }
 }
