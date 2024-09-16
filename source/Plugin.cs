@@ -185,6 +185,22 @@ namespace LobbyImprovements
             {
                 __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
             }
+
+            if (__instance.levelListContainer && !__instance.levelListContainer.gameObject.GetComponentInChildren<ContentSizeFitter>())
+            {
+                __instance.levelListContainer.GetChild(0).gameObject.SetActive(false);
+                ContentSizeFitter val = __instance.levelListContainer.gameObject.AddComponent<ContentSizeFitter>();
+                val.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                val.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                VerticalLayoutGroup val2 = __instance.levelListContainer.gameObject.AddComponent<VerticalLayoutGroup>();
+                val2.spacing = 6f;
+                val2.childAlignment = 0;
+                val2.reverseArrangement = false;
+                val2.childControlHeight = false;
+                val2.childControlWidth = false;
+                val2.childForceExpandHeight = true;
+                val2.childForceExpandWidth = true;
+            }
         }
 
         // Adds direct connect support to the lobby list tag input field
@@ -335,8 +351,8 @@ namespace LobbyImprovements
                 newData.Add($"steamticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
             }
 
-            if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
-                newData.Add($"password:{PluginLoader.lobbyPassword}");
+            if (!string.IsNullOrWhiteSpace(HostingUI.protectedLobbyPassword))
+                newData.Add($"password:{HostingUI.protectedLobbyPassword}");
             else
                 newData.Add($"password:");
 
@@ -389,7 +405,7 @@ namespace LobbyImprovements
                     else if (PluginLoader.lanSecureLobby.Value)
                     {
                         string kickPrefix = "<size=12><color=red>LobbyImprovements:<color=white>\n";
-                        response.Reason = $"{kickPrefix}This lobby is secure which requires you to have the LobbyImprovements mod.";
+                        response.Reason = $"{kickPrefix}This lobby requires you to have the LobbyImprovements mod.";
                         response.Approved = false;
                     }
                 }
@@ -475,7 +491,7 @@ namespace LobbyImprovements
                             if (PluginLoader.steamSecureLobby.Value)
                             {
                                 string kickPrefix = "<size=12><color=red>Missing Steam Ticket:<color=white>\n";
-                                response.Reason = $"{kickPrefix}This lobby has steam authentication enforced which requires you to have the LobbyImprovements mod.";
+                                response.Reason = $"{kickPrefix}This lobby requires you to have the LobbyImprovements mod.";
                                 response.Approved = false;
                             }
                             else

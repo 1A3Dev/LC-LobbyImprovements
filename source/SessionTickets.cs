@@ -21,7 +21,6 @@ namespace LobbyImprovements
             string activePlayerStr = JsonConvert.SerializeObject(new CL_SteamPlayer()
             {
                 actualClientId = sv_playerInfo.actualClientId,
-                playerClientId = sv_playerInfo.playerClientId,
                 steamId = sv_playerInfo.steamId,
                 authResult1 = (int)sv_playerInfo.authResult1 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult1,
                 authResult2 = (int)sv_playerInfo.authResult2 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult2,
@@ -82,7 +81,6 @@ namespace LobbyImprovements
                     activePlayers.Add(new CL_SteamPlayer()
                     {
                         actualClientId = sv_playerInfo.actualClientId,
-                        playerClientId = sv_playerInfo.playerClientId,
                         steamId = sv_playerInfo.steamId,
                         authResult1 = (int)sv_playerInfo.authResult1 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult1,
                         authResult2 = (int)sv_playerInfo.authResult2 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult2,

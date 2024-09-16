@@ -9,7 +9,6 @@
 
 This mod adds various features relating to lobbies:
 
-- Invite Only Lobbies
 - LAN Improvements
   - Ability to change the port in-case the default (7777) isn't available
   - Added a lobby list ([Screenshot](https://i.gyazo.com/a84d8057da4d3b48856a66b073df7c97.png))
@@ -18,13 +17,25 @@ This mod adds various features relating to lobbies:
     - Ability to sort by lobby name or player count
     - Support for challenge moon and specifying a lobby tag
     - This is compatible with late joining mods such as LobbyControl
-- Lobby Codes
+  - Added ability to set your player name
+    - Only people who have this mod will be able to see the usernames
+  - Added the ability to ban players in LAN
+    - If you have this enabled then the lobby will only be joinable by people who have this mod
+- Lobby Codes/IDs
   - You can copy your current lobby's id via the option on the pause menu
   - You can copy a lobby id from the lobby list using the "Copy ID" button
   - You can join a lobby via the id by putting it into the tag input above the lobby list
+- Lobby Hosting Changes
+  - Added Password Protected Lobbies
+    - If you have a password set then the lobby will only be joinable by people who have this mod
+  - Added Steam Session Validation
+    - If you have this enabled then the lobby will only be joinable by people who have this mod
+    - If you have this enabled then players without a valid steam session will be disconnected from the lobby
+  - Added a warning when trying to host a lobby where the name contains a word that is blacklisted in vanilla
 - Lobby Name Filter Customisation
   - You can modify the blocked terms
 - Steam Improvements
+  - Added option to set the lobby as invite only
   - "Recently Played With" Integration ([Screenshot](https://i.gyazo.com/02fc2fce3599a737a54376f2fa22f49d.png))
     - This enables the steam "recently played with" integration which allows you to view the list of people you have recently played with. You can access the list by opening steam then clicking View > Players. ([Screenshot](https://i.imgur.com/Mzdrgjt.png))
   - Added a button to sort the lobby list by player count

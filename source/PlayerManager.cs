@@ -40,7 +40,6 @@ namespace LobbyImprovements
     public class SV_SteamPlayer
     {
         public ulong actualClientId;
-        public int playerClientId = -1;
         public SteamId steamId;
         public LIBeginAuthResult authResult1 = LIBeginAuthResult.None;
         public LIAuthResponse authResult2 = LIAuthResponse.None;
@@ -50,7 +49,6 @@ namespace LobbyImprovements
     public class CL_SteamPlayer
     {
         public ulong actualClientId;
-        public int playerClientId = -1;
         public SteamId steamId;
         public LIMinimalAuthResult authResult1 = LIMinimalAuthResult.None;
         public LIMinimalAuthResult authResult2 = LIMinimalAuthResult.None;

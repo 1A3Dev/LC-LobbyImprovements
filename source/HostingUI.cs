@@ -5,11 +5,12 @@ using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Lobby = Steamworks.Data.Lobby;
 using System.Linq;
+using BepInEx.Bootstrap;
 
 namespace LobbyImprovements
 {
     [HarmonyPatch]
-    public class LobbyInviteOnly
+    public class HostingUI
     {
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
@@ -21,57 +22,94 @@ namespace LobbyImprovements
                 Transform lobbyHostOptions = hostSettingsContainer?.Find("LobbyHostOptions");
                 if (lobbyHostOptions != null)
                 {
-                    RectTransform rectTransform = hostSettingsContainer.GetComponent<RectTransform>();
-                    rectTransform.sizeDelta = new Vector2(256.65f, 250f); // Increase height
+                    Transform filesPanel = __instance.HostSettingsScreen.transform.Find("FilesPanel");
+                    GameObject liPanel = GameObject.Instantiate(filesPanel.gameObject, filesPanel.parent);
+                    liPanel.name = "LIPanel";
+                    TextMeshProUGUI panelTitle = liPanel.transform.Find("EnterAName").gameObject.GetComponent<TextMeshProUGUI>();
+                    panelTitle.transform.localPosition = new Vector3(0f, 100f, 0f);
+                    panelTitle.fontSize = 14f;
+                    panelTitle.text = "LobbyImprovements";
+                    liPanel.transform.localPosition = new Vector3(-252.0869f, -5.648f, -2.785f);
+                    for (int i = liPanel.transform.childCount - 1; i >= 0; i--)
+                    {
+                        Transform child = liPanel.transform.GetChild(i);
+                        if (child.name != "EnterAName" && child.name != "Darken" && child.name != "Outline")
+                        {
+                            GameObject.Destroy(child.gameObject);
+                        }
+                    }
+
+                    //RectTransform rectTransform = hostSettingsContainer.GetComponent<RectTransform>();
+                    //rectTransform.sizeDelta = new Vector2(256.65f, 250f); // Increase height
 
                     // Field Labels
                     GameObject serverNameLabel = lobbyHostOptions.Find("OptionsNormal/EnterAName")?.gameObject;
                     if (serverNameLabel != null)
                     {
-                        serverNameLabel.transform.localPosition = new Vector3(0f, 119f, 0f);
+                        // Main Panel
+                        RectTransform serverNameRect = serverNameLabel.GetComponent<RectTransform>();
+                        serverNameRect.anchorMin = new Vector2(0.5f, 0.5f);
+                        serverNameRect.anchorMax = new Vector2(0.5f, 0.5f);
+                        serverNameRect.pivot = new Vector2(0.5f, 0.5f);
                         serverNameLabel.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
+                        serverNameLabel.transform.localPosition = new Vector3(0f, 30f, 0f);
                         serverNameLabel.GetComponent<TextMeshProUGUI>().text = "Server Name:";
-
-                        GameObject serverTagLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
-                        serverTagLabel.name = "EnterATag";
-                        serverTagLabel.transform.localPosition = new Vector3(0f, 76f, 0f);
-                        serverTagLabel.GetComponent<TextMeshProUGUI>().text = "Server Tag:";
-
-                        GameObject serverPasswordLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
-                        serverPasswordLabel.name = "EnterAPassword";
-                        serverPasswordLabel.transform.localPosition = new Vector3(0f, -8f, 0f);
-                        serverPasswordLabel.GetComponent<TextMeshProUGUI>().text = "Server Password:";
 
                         GameObject serverAccessLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
                         serverAccessLabel.name = "EnterAccess";
-                        serverAccessLabel.transform.localPosition = new Vector3(0f, 34f, 0f);
+                        serverAccessLabel.transform.localPosition = new Vector3(0f, 70f, 0f);
                         serverAccessLabel.GetComponent<TextMeshProUGUI>().text = "Server Access:";
+
+                        GameObject serverTagLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
+                        serverTagLabel.name = "EnterATag";
+                        serverTagLabel.transform.localPosition = new Vector3(0f, -10f, 0f);
+                        serverTagLabel.GetComponent<TextMeshProUGUI>().text = "Server Tag:";
+
+                        // Left Panel
+                        GameObject serverPasswordLabel = GameObject.Instantiate(serverNameLabel.gameObject, liPanel.transform);
+                        serverPasswordLabel.name = "EnterAPassword";
+                        serverPasswordLabel.transform.localPosition = new Vector3(0f, 70f, 0f);
+                        serverPasswordLabel.GetComponent<TextMeshProUGUI>().fontSize = 12f;
+                        serverPasswordLabel.GetComponent<TextMeshProUGUI>().text = "Server Password:";
+
                     }
 
                     // Text Fields
                     GameObject serverTagObject = lobbyHostOptions.Find("OptionsNormal/ServerTagInputField")?.gameObject;
                     if (serverTagObject != null)
                     {
-                        serverTagObject.transform.localPosition = new Vector3(0f, 55f, 0f);
-                        serverTagObject.GetComponent<RectTransform>().sizeDelta = new Vector2(310.55f, 30f);
+                        RectTransform serverTagRect = serverTagObject.GetComponent<RectTransform>();
+                        serverTagRect.sizeDelta = new Vector2(310.55f, 30f);
+                        serverTagRect.anchorMin = new Vector2(0.5f, 0.5f);
+                        serverTagRect.anchorMax = new Vector2(0.5f, 0.5f);
+                        serverTagRect.pivot = new Vector2(0.5f, 0.5f);
+                        serverTagObject.transform.localPosition = new Vector3(0f, -30f, 0f);
+                        serverTagObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().fontSize = 16f;
+                        serverTagObject.transform.Find("Text Area/Text").GetComponent<TextMeshProUGUI>().fontSize = 16f;
                         __instance.lobbyTagInputField = serverTagObject.GetComponent<TMP_InputField>();
 
-                        if (lobbyHostOptions.Find("OptionsNormal/ServerNameField") != null)
+                        if (serverTagObject.transform.parent.Find("ServerNameField") != null)
                         {
-                            GameObject.Destroy(lobbyHostOptions.Find("OptionsNormal/ServerNameField")?.gameObject);
+                            GameObject.Destroy(serverTagObject.transform.parent.Find("ServerNameField")?.gameObject);
 
                             GameObject serverNameObject = GameObject.Instantiate(serverTagObject.gameObject, serverTagObject.transform.parent);
                             serverNameObject.name = "ServerNameField";
-                            serverNameObject.transform.localPosition = new Vector3(0f, 98f, 0f);
+                            serverNameObject.transform.localPosition = new Vector3(0f, 10f, 0f);
                             serverNameObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().text = "Enter a name...";
                             __instance.lobbyNameInputField = serverNameObject.GetComponent<TMP_InputField>();
+                        }
 
-                            GameObject serverPasswordObject = GameObject.Instantiate(serverTagObject.gameObject, serverTagObject.transform.parent);
+                        if (liPanel.transform.Find("ServerPasswordField") == null)
+                        {
+                            GameObject serverPasswordObject = GameObject.Instantiate(serverTagObject.gameObject, liPanel.transform);
                             serverPasswordObject.name = "ServerPasswordField";
-                            serverPasswordObject.transform.localPosition = new Vector3(0f, -28f, 0f);
-                            serverPasswordObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().text = "Enter a password...";
+                            serverPasswordObject.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 30f);
+                            serverPasswordObject.transform.localPosition = new Vector3(0f, 50f, 0f);
+                            TextMeshProUGUI placeholderText = serverPasswordObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>();
+                            placeholderText.text = "None";
+                            placeholderText.horizontalAlignment = HorizontalAlignmentOptions.Center;
+                            serverPasswordObject.transform.Find("Text Area/Text").GetComponent<TextMeshProUGUI>().horizontalAlignment = HorizontalAlignmentOptions.Center;
                             serverPasswordObject.GetComponent<TMP_InputField>().contentType = TMP_InputField.ContentType.Password;
-                            serverPasswordObject.GetComponent<TMP_InputField>().text = PluginLoader.lobbyPassword;
                         }
                     }
 
@@ -89,7 +127,7 @@ namespace LobbyImprovements
                             privacyDropdownRect.anchorMax = new Vector2(0.5f, 0.5f);
                             privacyDropdownRect.pivot = new Vector2(0.5f, 0.5f);
                             privacyDropdownObj.transform.localScale = new Vector3(0.7172f, 0.7172f, 0.7172f);
-                            privacyDropdownObj.transform.localPosition = new Vector3(0f, 3f, 0f);
+                            privacyDropdownObj.transform.localPosition = new Vector3(0f, 50f, 0f);
 
                             TMP_Dropdown privacyDropdown = privacyDropdownObj.GetComponent<TMP_Dropdown>();
                             privacyDropdown.ClearOptions();
@@ -141,20 +179,21 @@ namespace LobbyImprovements
                     GameObject checkboxObj = GameObject.Find("Canvas/MenuContainer/LobbyList/ListPanel/ToggleChallengeSort");
                     if (checkboxObj != null)
                     {
-                        if (lobbyHostOptions.Find("OptionsNormal/ServerSecureToggle") == null)
+                        if (liPanel.transform.Find("ServerSecureToggle") == null)
                         {
-                            GameObject secureToggleObj = GameObject.Instantiate(checkboxObj, lobbyHostOptions.Find("OptionsNormal"));
+                            GameObject secureToggleObj = GameObject.Instantiate(checkboxObj, liPanel.transform);
                             secureToggleObj.name = "ServerSecureToggle";
                             RectTransform secureToggleRect = secureToggleObj.GetComponent<RectTransform>();
-                            secureToggleRect.sizeDelta = new Vector2(310.55f, 30f);
+                            secureToggleRect.sizeDelta = new Vector2(200f, 30f);
                             secureToggleRect.anchorMin = new Vector2(0.5f, 0.5f);
                             secureToggleRect.anchorMax = new Vector2(0.5f, 0.5f);
                             secureToggleRect.pivot = new Vector2(0.5f, 0.5f);
                             secureToggleObj.transform.localScale = new Vector3(0.7172f, 0.7172f, 0.7172f);
-                            secureToggleObj.transform.localPosition = new Vector3(0f, -73f, 0f);
+                            secureToggleObj.transform.localPosition = new Vector3(0f, 20f, 0f);
                             TextMeshProUGUI secureToggleText = secureToggleObj.GetComponentInChildren<TextMeshProUGUI>();
-                            secureToggleText.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 30f);
-                            secureToggleText.transform.localPosition = new Vector3(-45f, 0f, 0f);
+                            secureToggleText.GetComponent<RectTransform>().sizeDelta = new Vector2(175f, 30f);
+                            secureToggleText.transform.localPosition = new Vector3(-4f, 0f, 0f);
+                            secureToggleText.fontSize = 12f;
                             secureToggleText.text = GameNetworkManager.Instance.disableSteam ? "Validate Client Tokens:" : "Validate Steam Sessions:";
                             Image secureToggleIcon = secureToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
                             Button secureToggleBtn = secureToggleObj.GetComponentInChildren<Button>();
@@ -173,16 +212,41 @@ namespace LobbyImprovements
                                 }
                                 PluginLoader.StaticConfig.Save();
                             });
+
+                            if (secureToggleObj.transform.Find("ServerMaxPlayers") == null)
+                            {
+                                GameObject maxPlayersParentObj = GameObject.Instantiate(secureToggleObj, secureToggleObj.transform.parent);
+                                maxPlayersParentObj.name = "ServerMaxPlayers";
+                                maxPlayersParentObj.GetComponentInChildren<TextMeshProUGUI>().text = "Max Players:";
+                                maxPlayersParentObj.transform.localPosition = new Vector3(0f, -85f, 0f);
+                                GameObject.Destroy(maxPlayersParentObj.transform.Find("Arrow")?.gameObject);
+                                GameObject.Destroy(maxPlayersParentObj.transform.Find("Arrow (1)")?.gameObject);
+
+                                if (maxPlayersParentObj.transform.Find("MC_CrewCount") == null)
+                                {
+                                    GameObject maxPlayersObject = GameObject.Instantiate(serverTagObject.gameObject, maxPlayersParentObj.transform);
+                                    maxPlayersObject.name = "MC_CrewCount";
+                                    RectTransform maxPlayersRect = maxPlayersObject.GetComponent<RectTransform>();
+                                    maxPlayersRect.sizeDelta = new Vector2(55f, 30f);
+                                    maxPlayersObject.transform.localPosition = new Vector3(75f, 0f, 0f);
+                                    maxPlayersObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().text = "4";
+                                    maxPlayersObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().horizontalAlignment = HorizontalAlignmentOptions.Center;
+                                    maxPlayersObject.transform.Find("Text Area/Text").GetComponent<TextMeshProUGUI>().horizontalAlignment = HorizontalAlignmentOptions.Center;
+                                    maxPlayersObject.GetComponent<TMP_InputField>().characterValidation = TMP_InputField.CharacterValidation.Integer;
+                                    maxPlayersObject.GetComponent<TMP_InputField>().characterLimit = 3;
+                                    maxPlayersObject.GetComponent<TMP_InputField>().readOnly = !Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany");
+                                }
+                            }
                         }
                     }
 
                     hostSettingsContainer.Find("Confirm").localScale = new Vector3(0.8f, 0.8f, 0.8f);
-                    hostSettingsContainer.Find("Confirm").localPosition = new Vector3(55f, -105f, 0f);
+                    hostSettingsContainer.Find("Confirm").localPosition = new Vector3(55f, -68f, 0f);
                     hostSettingsContainer.Find("Back").localScale = new Vector3(0.8f, 0.8f, 0.8f);
-                    hostSettingsContainer.Find("Back").localPosition = new Vector3(-68f, -105f, 0f);
+                    hostSettingsContainer.Find("Back").localPosition = new Vector3(-68f, -68f, 0f);
 
-                    __instance.privatePublicDescription.transform.localPosition = new Vector3(0f, 140f, 0f);
-                    __instance.tipTextHostSettings.transform.localPosition = new Vector3(0f, -170f, 0f);
+                    __instance.privatePublicDescription.transform.localPosition = new Vector3(0f, 110f, 0f);
+                    __instance.tipTextHostSettings.transform.localPosition = new Vector3(0f, -140f, 0f);
 
                     __instance.HostSettingsOptionsNormal.transform.Find("Public")?.gameObject?.SetActive(false);
                     __instance.HostSettingsOptionsNormal.transform.Find("Private")?.gameObject?.SetActive(false);
@@ -236,11 +300,13 @@ namespace LobbyImprovements
         }
 
         internal static ulong protectedLobbyId = 0;
+        internal static string protectedLobbyPassword = null;
         [HarmonyPatch(typeof(MenuManager), "DisplayMenuNotification")]
         [HarmonyPostfix]
         private static void MM_DisplayMenuNotification(MenuManager __instance)
         {
             protectedLobbyId = 0;
+            protectedLobbyPassword = null;
 
             if (__instance.menuNotificationText.text.EndsWith("You have entered an incorrect password."))
             {
@@ -263,7 +329,7 @@ namespace LobbyImprovements
                     joinButtonObj.GetComponentInChildren<TextMeshProUGUI>().text = "[ Join ]";
                     Button joinButton = joinButtonObj.GetComponent<Button>();
                     joinButton.onClick.AddListener(() => {
-                        PluginLoader.lobbyPassword = __instance.menuNotification.transform.Find("Panel/ServerPasswordField")?.GetComponent<TMP_InputField>()?.text;
+                        protectedLobbyPassword = __instance.menuNotification.transform.Find("Panel/ServerPasswordField")?.GetComponent<TMP_InputField>()?.text;
                         if (GameNetworkManager.Instance.disableSteam)
                         {
                             __instance.StartAClient();
