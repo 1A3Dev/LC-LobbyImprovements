@@ -47,24 +47,27 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPriority(Priority.First)]
         private static bool SteamLobbyManager_LoadServerList(SteamLobbyManager __instance)
         {
-            if (GameNetworkManager.Instance.disableSteam)
+            TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
+            if (sortDropdown != null)
             {
-                GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
-                TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-                if (sortDropdown != null && sortDropdown.options[0].text != "ASC: Name")
+                if (GameNetworkManager.Instance.disableSteam)
                 {
-                    sortDropdown.ClearOptions();
-                    sortDropdown.AddOptions(new List<TMP_Dropdown.OptionData>()
+                    GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
+                    if (sortDropdown.options[0].text != "ASC: Name")
                     {
-                        new("ASC: Name"),
-                        new("DESC: Name"),
-                        new("ASC: Players"),
-                        new("DESC: Players"),
-                    });
-                    __instance.sortByDistanceSetting = sortDropdown.value;
+                        sortDropdown.ClearOptions();
+                        sortDropdown.AddOptions(new List<TMP_Dropdown.OptionData>()
+                        {
+                            new("ASC: Name"),
+                            new("DESC: Name"),
+                            new("ASC: Players"),
+                            new("DESC: Players"),
+                        });
+                        __instance.sortByDistanceSetting = sortDropdown.value;
+                    }
+                    LoadServerList_LAN(__instance);
+                    return false;
                 }
-                LoadServerList_LAN(__instance);
-                return false;
             }
 
             return true;

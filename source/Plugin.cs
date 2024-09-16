@@ -10,6 +10,7 @@ using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using DunGen;
 using HarmonyLib;
 using Steamworks;
 using TMPro;
@@ -60,9 +61,9 @@ namespace LobbyImprovements
                 if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
                 {
                     if (lobbyPassword != null)
-                        GameNetworkManager.Instance.currentLobby.Value.SetData("password", "t");
+                        GameNetworkManager.Instance.currentLobby.Value.SetData("li_password", "1");
                     else
-                        GameNetworkManager.Instance.currentLobby.Value.DeleteData("password");
+                        GameNetworkManager.Instance.currentLobby.Value.DeleteData("li_password");
                 }
             }
         }
@@ -100,9 +101,9 @@ namespace LobbyImprovements
                     if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
                     {
                         if (steamSecureLobby.Value)
-                            GameNetworkManager.Instance.currentLobby.Value.SetData("secure", "t");
+                            GameNetworkManager.Instance.currentLobby.Value.SetData("li_secure", "1");
                         else
-                            GameNetworkManager.Instance.currentLobby.Value.DeleteData("secure");
+                            GameNetworkManager.Instance.currentLobby.Value.DeleteData("li_secure");
                     }
                 }
             };
@@ -233,7 +234,7 @@ namespace LobbyImprovements
                 }
 
                 // Move the text for challenge moon lobbies
-                if (lobbySlot.thisLobby.GetData("chal") == "t")
+                if (lobbySlot.thisLobby.GetData("chal") == "1")
                 {
                     TextMeshProUGUI origChalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     origChalModeText?.gameObject?.SetActive(false);
@@ -249,7 +250,7 @@ namespace LobbyImprovements
                     chalModeText.text = "CHALLENGE MODE";
                 }
 
-                if (lobbySlot.thisLobby.GetData("secure") == "t")
+                if (lobbySlot.thisLobby.GetData("li_secure") == "1")
                 {
                     GameObject secureTextObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
                     secureTextObj.name = "SecureText";
@@ -492,6 +493,17 @@ namespace LobbyImprovements
                         }
                     }
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(Steamworks.Data.LobbyQuery), "ApplyFilters")]
+        [HarmonyPrefix]
+        public static void ApplyFilters_Prefix(ref Steamworks.Data.LobbyQuery __instance)
+        {
+            // Hide MC lobbies with over 4 players if MC isn't loaded
+            if (!Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
+            {
+                __instance.WithLower("mc_maxplayers", 5);
             }
         }
 

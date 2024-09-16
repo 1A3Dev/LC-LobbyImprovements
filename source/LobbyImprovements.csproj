@@ -38,7 +38,7 @@
         <Reference Include="Facepunch Transport for Netcode for GameObjects">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch Transport for Netcode for GameObjects.dll</HintPath>
         </Reference>
-        <Reference Include="Facepunch.Steamworks.Win64">
+        <Reference Include="Facepunch.Steamworks.Win64" Publicize="true">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch.Steamworks.Win64.dll</HintPath>
         </Reference>
         <Reference Include="Newtonsoft.Json">

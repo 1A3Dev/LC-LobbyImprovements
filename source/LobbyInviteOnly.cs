@@ -181,6 +181,9 @@ namespace LobbyImprovements
                     hostSettingsContainer.Find("Back").localScale = new Vector3(0.8f, 0.8f, 0.8f);
                     hostSettingsContainer.Find("Back").localPosition = new Vector3(-68f, -105f, 0f);
 
+                    __instance.privatePublicDescription.transform.localPosition = new Vector3(0f, 140f, 0f);
+                    __instance.tipTextHostSettings.transform.localPosition = new Vector3(0f, -170f, 0f);
+
                     __instance.HostSettingsOptionsNormal.transform.Find("Public")?.gameObject?.SetActive(false);
                     __instance.HostSettingsOptionsNormal.transform.Find("Private")?.gameObject?.SetActive(false);
                 }
@@ -218,9 +221,9 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
-            if (LobbyNameFilter.offensiveWords.Contains(__instance.lobbyNameInputField.text.ToLower()))
+            if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly && LobbyNameFilter.offensiveWords.Any(x => __instance.lobbyNameInputField.text.ToLower().Contains(x)))
             {
-                string blockMessage = "Lobby name is disallowed in vanilla, you may not get many players.";
+                string blockMessage = "This lobby name is blocked in vanilla. If you wish to use it anyway click confirm again.";
                 if (__instance.tipTextHostSettings.text != blockMessage)
                 {
                     __instance.tipTextHostSettings.text = blockMessage;
@@ -298,9 +301,9 @@ namespace LobbyImprovements
             }
 
             if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
-                lobby.SetData("password", "t");
+                lobby.SetData("li_password", "1");
             if (PluginLoader.steamSecureLobby.Value)
-                lobby.SetData("secure", "t");
+                lobby.SetData("li_secure", "1");
         }
 
         [HarmonyPatch(typeof(QuickMenuManager), "NonHostPlayerSlotsEnabled")]
