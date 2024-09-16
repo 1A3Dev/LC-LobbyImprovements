@@ -4,6 +4,7 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Lobby = Steamworks.Data.Lobby;
+using System.Linq;
 
 namespace LobbyImprovements
 {
@@ -27,30 +28,31 @@ namespace LobbyImprovements
                     GameObject serverNameLabel = lobbyHostOptions.Find("OptionsNormal/EnterAName")?.gameObject;
                     if (serverNameLabel != null)
                     {
-                        serverNameLabel.transform.localPosition = new Vector3(0f, 120f, 0f);
-                        serverNameLabel.GetComponent<TextMeshProUGUI>().text = "Server name:";
-
-                        GameObject serverPasswordLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
-                        serverPasswordLabel.name = "EnterAPassword";
-                        serverPasswordLabel.transform.localPosition = new Vector3(0f, 78f, 0f);
-                        serverPasswordLabel.GetComponent<TextMeshProUGUI>().text = "Server password:";
-
-                        GameObject serverAccessLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
-                        serverAccessLabel.name = "EnterAccess";
-                        serverAccessLabel.transform.localPosition = new Vector3(0f, 36f, 0f);
-                        serverAccessLabel.GetComponent<TextMeshProUGUI>().text = "Server access:";
+                        serverNameLabel.transform.localPosition = new Vector3(0f, 119f, 0f);
+                        serverNameLabel.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
+                        serverNameLabel.GetComponent<TextMeshProUGUI>().text = "Server Name:";
 
                         GameObject serverTagLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
                         serverTagLabel.name = "EnterATag";
-                        serverTagLabel.transform.localPosition = new Vector3(0f, -5f, 0f);
-                        serverTagLabel.GetComponent<TextMeshProUGUI>().text = "Server tag:";
+                        serverTagLabel.transform.localPosition = new Vector3(0f, 76f, 0f);
+                        serverTagLabel.GetComponent<TextMeshProUGUI>().text = "Server Tag:";
+
+                        GameObject serverPasswordLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
+                        serverPasswordLabel.name = "EnterAPassword";
+                        serverPasswordLabel.transform.localPosition = new Vector3(0f, -8f, 0f);
+                        serverPasswordLabel.GetComponent<TextMeshProUGUI>().text = "Server Password:";
+
+                        GameObject serverAccessLabel = GameObject.Instantiate(serverNameLabel.gameObject, serverNameLabel.transform.parent);
+                        serverAccessLabel.name = "EnterAccess";
+                        serverAccessLabel.transform.localPosition = new Vector3(0f, 34f, 0f);
+                        serverAccessLabel.GetComponent<TextMeshProUGUI>().text = "Server Access:";
                     }
 
                     // Text Fields
                     GameObject serverTagObject = lobbyHostOptions.Find("OptionsNormal/ServerTagInputField")?.gameObject;
                     if (serverTagObject != null)
                     {
-                        serverTagObject.transform.localPosition = new Vector3(0f, -28f, 0f);
+                        serverTagObject.transform.localPosition = new Vector3(0f, 55f, 0f);
                         serverTagObject.GetComponent<RectTransform>().sizeDelta = new Vector2(310.55f, 30f);
                         __instance.lobbyTagInputField = serverTagObject.GetComponent<TMP_InputField>();
 
@@ -66,7 +68,7 @@ namespace LobbyImprovements
 
                             GameObject serverPasswordObject = GameObject.Instantiate(serverTagObject.gameObject, serverTagObject.transform.parent);
                             serverPasswordObject.name = "ServerPasswordField";
-                            serverPasswordObject.transform.localPosition = new Vector3(0f, 55f, 0f);
+                            serverPasswordObject.transform.localPosition = new Vector3(0f, -28f, 0f);
                             serverPasswordObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().text = "Enter a password...";
                             serverPasswordObject.GetComponent<TMP_InputField>().contentType = TMP_InputField.ContentType.Password;
                             serverPasswordObject.GetComponent<TMP_InputField>().text = PluginLoader.lobbyPassword;
@@ -81,9 +83,13 @@ namespace LobbyImprovements
                         {
                             GameObject privacyDropdownObj = GameObject.Instantiate(dropdownObj, lobbyHostOptions.Find("OptionsNormal"));
                             privacyDropdownObj.name = "ServerAccessDropdown";
+                            RectTransform privacyDropdownRect = privacyDropdownObj.GetComponent<RectTransform>();
+                            privacyDropdownRect.sizeDelta = new Vector2(310.55f, 30f);
+                            privacyDropdownRect.anchorMin = new Vector2(0.5f, 0.5f);
+                            privacyDropdownRect.anchorMax = new Vector2(0.5f, 0.5f);
+                            privacyDropdownRect.pivot = new Vector2(0.5f, 0.5f);
                             privacyDropdownObj.transform.localScale = new Vector3(0.7172f, 0.7172f, 0.7172f);
-                            privacyDropdownObj.transform.localPosition = new Vector3(111f, 14f, 0f);
-                            privacyDropdownObj.GetComponent<RectTransform>().sizeDelta = new Vector2(310.55f, 30f);
+                            privacyDropdownObj.transform.localPosition = new Vector3(0f, 3f, 0f);
 
                             TMP_Dropdown privacyDropdown = privacyDropdownObj.GetComponent<TMP_Dropdown>();
                             privacyDropdown.ClearOptions();
@@ -132,8 +138,48 @@ namespace LobbyImprovements
                         }
                     }
 
-                    hostSettingsContainer.Find("Confirm").localPosition = new Vector3(0f, -80f, 0f);
-                    hostSettingsContainer.Find("Back").localPosition = new Vector3(0f, -105f, 0f);
+                    GameObject checkboxObj = GameObject.Find("Canvas/MenuContainer/LobbyList/ListPanel/ToggleChallengeSort");
+                    if (checkboxObj != null)
+                    {
+                        if (lobbyHostOptions.Find("OptionsNormal/ServerSecureToggle") == null)
+                        {
+                            GameObject secureToggleObj = GameObject.Instantiate(checkboxObj, lobbyHostOptions.Find("OptionsNormal"));
+                            secureToggleObj.name = "ServerSecureToggle";
+                            RectTransform secureToggleRect = secureToggleObj.GetComponent<RectTransform>();
+                            secureToggleRect.sizeDelta = new Vector2(310.55f, 30f);
+                            secureToggleRect.anchorMin = new Vector2(0.5f, 0.5f);
+                            secureToggleRect.anchorMax = new Vector2(0.5f, 0.5f);
+                            secureToggleRect.pivot = new Vector2(0.5f, 0.5f);
+                            secureToggleObj.transform.localScale = new Vector3(0.7172f, 0.7172f, 0.7172f);
+                            secureToggleObj.transform.localPosition = new Vector3(0f, -73f, 0f);
+                            TextMeshProUGUI secureToggleText = secureToggleObj.GetComponentInChildren<TextMeshProUGUI>();
+                            secureToggleText.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 30f);
+                            secureToggleText.transform.localPosition = new Vector3(-45f, 0f, 0f);
+                            secureToggleText.text = GameNetworkManager.Instance.disableSteam ? "Validate Client Tokens:" : "Validate Steam Sessions:";
+                            Image secureToggleIcon = secureToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
+                            Button secureToggleBtn = secureToggleObj.GetComponentInChildren<Button>();
+                            secureToggleBtn.onClick = new Button.ButtonClickedEvent();
+                            secureToggleBtn.onClick.AddListener(() =>
+                            {
+                                if (GameNetworkManager.Instance.disableSteam)
+                                {
+                                    PluginLoader.lanSecureLobby.Value = !PluginLoader.lanSecureLobby.Value;
+                                    secureToggleIcon.enabled = PluginLoader.lanSecureLobby.Value;
+                                }
+                                else
+                                {
+                                    PluginLoader.steamSecureLobby.Value = !PluginLoader.steamSecureLobby.Value;
+                                    secureToggleIcon.enabled = PluginLoader.steamSecureLobby.Value;
+                                }
+                                PluginLoader.StaticConfig.Save();
+                            });
+                        }
+                    }
+
+                    hostSettingsContainer.Find("Confirm").localScale = new Vector3(0.8f, 0.8f, 0.8f);
+                    hostSettingsContainer.Find("Confirm").localPosition = new Vector3(55f, -105f, 0f);
+                    hostSettingsContainer.Find("Back").localScale = new Vector3(0.8f, 0.8f, 0.8f);
+                    hostSettingsContainer.Find("Back").localPosition = new Vector3(-68f, -105f, 0f);
 
                     __instance.HostSettingsOptionsNormal.transform.Find("Public")?.gameObject?.SetActive(false);
                     __instance.HostSettingsOptionsNormal.transform.Find("Private")?.gameObject?.SetActive(false);
@@ -152,13 +198,38 @@ namespace LobbyImprovements
                 Object.FindFirstObjectByType<SaveFileUISlot>()?.SetButtonColorForAllFileSlots();
                 __instance.HostSetLobbyPublic(__instance.hostSettings_LobbyPublic);
             }
+
+            Transform hostSettingsContainer = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer");
+            Transform lobbyHostOptions = hostSettingsContainer?.Find("LobbyHostOptions");
+            if (lobbyHostOptions != null)
+            {
+                Image secureToggleIcon = lobbyHostOptions.Find("OptionsNormal/ServerSecureToggle/Arrow (1)")?.GetComponentInChildren<Image>();
+                if (secureToggleIcon != null)
+                {
+                    if (GameNetworkManager.Instance.disableSteam)
+                        secureToggleIcon.enabled = PluginLoader.lanSecureLobby.Value;
+                    else
+                        secureToggleIcon.enabled = PluginLoader.steamSecureLobby.Value;
+                }
+            }
         }
 
         [HarmonyPatch(typeof(MenuManager), "ConfirmHostButton")]
         [HarmonyPrefix]
-        private static void MM_ConfirmHostButton(MenuManager __instance)
+        private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
+            if (LobbyNameFilter.offensiveWords.Contains(__instance.lobbyNameInputField.text.ToLower()))
+            {
+                string blockMessage = "Lobby name is disallowed in vanilla, you may not get many players.";
+                if (__instance.tipTextHostSettings.text != blockMessage)
+                {
+                    __instance.tipTextHostSettings.text = blockMessage;
+                    return false;
+                }
+            }
+
             PluginLoader.SetLobbyPassword(__instance.HostSettingsOptionsNormal.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text);
+            return true;
         }
 
         internal static ulong protectedLobbyId = 0;

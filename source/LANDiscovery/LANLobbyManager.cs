@@ -300,10 +300,6 @@ namespace LobbyImprovements.LANDiscovery
                         __instance.privatePublicDescription.text = "FRIENDS ONLY means only friends or invited people can join.";
                 }
             }
-
-            bool showTagField = __instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly;
-            __instance.lobbyTagInputField.gameObject.SetActive(showTagField);
-            __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions/OptionsNormal/EnterATag")?.gameObject?.SetActive(showTagField);
         }
 
         // Make the challenge leaderboard show your own stat whilst on LAN
