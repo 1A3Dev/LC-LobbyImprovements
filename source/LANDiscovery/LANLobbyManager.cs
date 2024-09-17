@@ -47,10 +47,10 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPriority(Priority.First)]
         private static bool SteamLobbyManager_LoadServerList(SteamLobbyManager __instance)
         {
-            TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-            if (sortDropdown != null)
+            if (GameNetworkManager.Instance.disableSteam)
             {
-                if (GameNetworkManager.Instance.disableSteam)
+                TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
+                if (sortDropdown != null)
                 {
                     GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
                     if (sortDropdown.options[0].text != "ASC: Name")
@@ -65,9 +65,28 @@ namespace LobbyImprovements.LANDiscovery
                         });
                         __instance.sortByDistanceSetting = sortDropdown.value;
                     }
-                    LoadServerList_LAN(__instance);
-                    return false;
                 }
+
+                TMP_InputField lanPlayerNameField = __instance.serverTagInputField.transform.parent.Find("PlayerNameInputField")?.gameObject.GetComponent<TMP_InputField>();
+                if (lanPlayerNameField == null)
+                {
+                    GameObject lanPlayerNameObj = GameObject.Instantiate(__instance.serverTagInputField.gameObject, __instance.serverTagInputField.transform.parent);
+                    lanPlayerNameObj.name = "PlayerNameInputField";
+                    lanPlayerNameObj.transform.localPosition = new Vector3(370f, -185f, 0f);
+                    lanPlayerNameField = lanPlayerNameObj.GetComponent<TMP_InputField>();
+                    lanPlayerNameField.characterLimit = 32;
+                    lanPlayerNameField.characterValidation = TMP_InputField.CharacterValidation.Alphanumeric;
+                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter player name...";
+                    lanPlayerNameField.onEndEdit = new TMP_InputField.SubmitEvent();
+                    lanPlayerNameField.onEndEdit.AddListener(s =>
+                    {
+                        ES3.Save("PlayerName", s, "LCGeneralSaveData");
+                    });
+                }
+                lanPlayerNameField.text = ES3.Load("PlayerName", "LCGeneralSaveData", "PlayerName");
+
+                LoadServerList_LAN(__instance);
+                return false;
             }
 
             return true;
