@@ -188,7 +188,6 @@ namespace LobbyImprovements
 
             if (__instance.levelListContainer && !__instance.levelListContainer.gameObject.GetComponentInChildren<ContentSizeFitter>())
             {
-                __instance.levelListContainer.GetChild(0).gameObject.SetActive(false);
                 ContentSizeFitter val = __instance.levelListContainer.gameObject.AddComponent<ContentSizeFitter>();
                 val.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 val.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
@@ -234,6 +233,9 @@ namespace LobbyImprovements
         {
             while (result.MoveNext())
                 yield return result.Current;
+
+            SteamLobbyManager lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
+            lobbyManager?.serverListBlankText?.gameObject?.SetActive(lobbyManager.serverListBlankText.text != string.Empty);
 
             LobbySlot[] lobbySlots = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
             foreach (LobbySlot lobbySlot in lobbySlots)

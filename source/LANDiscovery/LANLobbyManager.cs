@@ -269,6 +269,15 @@ namespace LobbyImprovements.LANDiscovery
 
             if (!anyResults)
                 __instance.serverListBlankText.text = "No available servers to join.";
+
+            __instance.serverListBlankText.gameObject.SetActive(__instance.serverListBlankText.text != string.Empty);
+        }
+
+        [HarmonyPatch(typeof(SteamLobbyManager), "LoadServerList")]
+        [HarmonyPostfix]
+        private static void SteamLobbyManager_LoadServerList_Postfix(SteamLobbyManager __instance)
+        {
+            __instance.serverListBlankText.gameObject.SetActive(__instance.serverListBlankText.text != string.Empty);
         }
     }
 
