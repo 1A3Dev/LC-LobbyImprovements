@@ -11,6 +11,7 @@ using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
+using BepInEx.Bootstrap;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -88,11 +89,16 @@ namespace LobbyImprovements.LANDiscovery
                 LoadServerList_LAN(__instance);
                 return false;
             }
+            else if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                General_Patches.LoadServerList_Steam(__instance);
+                return false;
+            }
 
             return true;
         }
 
-        private static async void LoadServerList_LAN(SteamLobbyManager __instance)
+        public static async void LoadServerList_LAN(SteamLobbyManager __instance)
         {
             if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
 
@@ -107,6 +113,7 @@ namespace LobbyImprovements.LANDiscovery
 
             __instance.refreshServerListTimer = 0f;
             __instance.serverListBlankText.text = "Loading server list...";
+            __instance.serverListBlankText.gameObject.SetActive(true);
             currentLobbyList = null;
             LANLobbySlot[] array = Object.FindObjectsByType<LANLobbySlot>(FindObjectsSortMode.InstanceID);
             for (int i = 0; i < array.Length; i++)
@@ -117,28 +124,22 @@ namespace LobbyImprovements.LANDiscovery
             clientDiscovery.listenPort = PluginLoader.lanDiscoveryPort.Value;
             LANLobby[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
             currentLobbyList = lobbiesArr;
-            GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
-            if (currentLobbyList != null)
+            if (currentLobbyList != null && currentLobbyList.Length != 0)
             {
-                if (currentLobbyList.Length == 0)
-                {
-                    __instance.serverListBlankText.text = "No available servers to join.";
-                }
-                else
-                {
-                    __instance.serverListBlankText.text = "";
-                }
+                __instance.serverListBlankText.text = "";
                 __instance.lobbySlotPositionOffset = 0f;
                 __instance.loadLobbyListCoroutine = GameNetworkManager.Instance.StartCoroutine(loadLobbyListAndFilter(currentLobbyList, __instance));
             }
             else
             {
-                PluginLoader.StaticLogger.LogInfo("Lobby list is null after request.");
                 __instance.serverListBlankText.text = "No available servers to join.";
+                GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
             }
         }
         private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance)
         {
+            __instance.serverListBlankText.gameObject.SetActive(false);
+
             bool anyResults = false;
 
             TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
@@ -271,13 +272,7 @@ namespace LobbyImprovements.LANDiscovery
                 __instance.serverListBlankText.text = "No available servers to join.";
 
             __instance.serverListBlankText.gameObject.SetActive(__instance.serverListBlankText.text != string.Empty);
-        }
-
-        [HarmonyPatch(typeof(SteamLobbyManager), "LoadServerList")]
-        [HarmonyPostfix]
-        private static void SteamLobbyManager_LoadServerList_Postfix(SteamLobbyManager __instance)
-        {
-            __instance.serverListBlankText.gameObject.SetActive(__instance.serverListBlankText.text != string.Empty);
+            GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
         }
     }
 
@@ -295,7 +290,6 @@ namespace LobbyImprovements.LANDiscovery
             else
                 __instance.privatePublicDescription.text = "PUBLIC means your game will be visible on the lobby list by anyone on your network.";
             __instance.lanSetAllowRemoteButtonAnimator?.SetBool("isPressed", !PluginLoader.setInviteOnly);
-            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
         }
 
         [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
@@ -305,7 +299,6 @@ namespace LobbyImprovements.LANDiscovery
             __instance.hostSettings_LobbyPublic = false;
             __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
             __instance.privatePublicDescription.text = "LOCALHOST means your game will only be joinable from your local machine.";
-            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", false);
         }
 
         [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
@@ -321,7 +314,6 @@ namespace LobbyImprovements.LANDiscovery
             }
             else
             {
-                PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
                 if (!setPublic)
                 {
                     __instance.setPrivateButtonAnimator.SetBool("isPressed", !PluginLoader.setInviteOnly);

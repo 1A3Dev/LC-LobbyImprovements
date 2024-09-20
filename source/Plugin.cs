@@ -6,6 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -13,22 +14,20 @@ using BepInEx.Logging;
 using DunGen;
 using HarmonyLib;
 using Steamworks;
+using Steamworks.Data;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using Color = UnityEngine.Color;
 using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
 {
-    [BepInPlugin(modGUID, "LobbyImprovements", modVersion)]
+    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     internal class PluginLoader : BaseUnityPlugin
     {
-        private const string modGUID = "Dev1A3.LobbyImprovements";
-
-        private readonly Harmony harmony = new Harmony(modGUID);
-
-        private const string modVersion = "1.0.0";
+        private readonly Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
         private static bool initialized;
 
@@ -38,6 +37,9 @@ namespace LobbyImprovements
         internal static ConfigFile StaticConfig { get; private set; }
 
         public static ConfigEntry<bool> steamSecureLobby;
+        public static ConfigEntry<bool> steamLobbyType_Vanilla;
+        public static ConfigEntry<bool> steamLobbyType_MoreCompany;
+        public static ConfigEntry<bool> steamLobbyType_Password;
 
         public static ConfigEntry<bool> recentlyPlayedWithOrbit;
 
@@ -61,9 +63,9 @@ namespace LobbyImprovements
                 if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
                 {
                     if (lobbyPassword != null)
-                        GameNetworkManager.Instance.currentLobby.Value.SetData("li_password", "1");
+                        GameNetworkManager.Instance.currentLobby.Value.SetData("password", "1");
                     else
-                        GameNetworkManager.Instance.currentLobby.Value.DeleteData("li_password");
+                        GameNetworkManager.Instance.currentLobby.Value.DeleteData("password");
                 }
             }
         }
@@ -107,6 +109,9 @@ namespace LobbyImprovements
                     }
                 }
             };
+            steamLobbyType_Vanilla = StaticConfig.Bind("Lobby List: Shown Types", "Vanilla", true, "Should you see vanilla lobbies on the lobby list?");
+            steamLobbyType_MoreCompany = StaticConfig.Bind("Lobby List: Shown Types", "MoreCompany", true, "Should you see morecompany lobbies on the lobby list?");
+            steamLobbyType_Password = StaticConfig.Bind("Lobby List: Shown Types", "Password Protected", true, "Should you see password protected lobbies on the lobby list?");
             recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
@@ -166,7 +171,6 @@ namespace LobbyImprovements
         }
 
         public static bool setInviteOnly = false;
-        public static Animator setInviteOnlyButtonAnimator;
     }
 
     [HarmonyPatch]
@@ -227,15 +231,106 @@ namespace LobbyImprovements
             return true;
         }
 
+        public static async void LoadServerList_Steam(SteamLobbyManager __instance)
+        {
+            if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
+
+            __instance.refreshServerListTimer = 0f;
+            __instance.serverListBlankText.text = "Loading server list...";
+            __instance.serverListBlankText.gameObject.SetActive(true);
+            __instance.currentLobbyList = null;
+            GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
+            LobbySlot[] array = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Object.Destroy(array[i].gameObject);
+            }
+
+            List<Lobby> combinedLobbies = new List<Lobby>();
+            bool hasMoreCompany = Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany");
+
+            if (PluginLoader.steamLobbyType_Vanilla.Value)
+            {
+                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+                    .WithMaxResults(50)
+                    .WithSlotsAvailable(1)
+                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+                    .WithEqual("password", 0)
+                    .WithLower("maxplayers", 5);
+                if (!__instance.sortWithChallengeMoons)
+                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+                if (__instance.serverTagInputField.text != string.Empty)
+                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+                if (tempLobbies != null && tempLobbies.Length > 0)
+                    combinedLobbies.AddRange(tempLobbies);
+                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Vanilla: {tempLobbies?.Length ?? 0}");
+            }
+
+            if (PluginLoader.steamLobbyType_Password.Value)
+            {
+                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+                    .WithMaxResults(50)
+                    .WithSlotsAvailable(1)
+                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+                    .WithEqual("password", 1);
+                if (!__instance.sortWithChallengeMoons)
+                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+                if (__instance.serverTagInputField.text != string.Empty)
+                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+                if (!hasMoreCompany)
+                    lobbyQuery = lobbyQuery.WithLower("maxplayers", 5);
+                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+                if (tempLobbies != null && tempLobbies.Length > 0)
+                    combinedLobbies.AddRange(tempLobbies);
+                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Password: {tempLobbies?.Length ?? 0}");
+            }
+
+            if (hasMoreCompany && PluginLoader.steamLobbyType_MoreCompany.Value)
+            {
+                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+                    .WithMaxResults(50)
+                    .WithSlotsAvailable(1)
+                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+                    .WithEqual("password", 0)
+                    .WithHigher("maxplayers", 4);
+                if (!__instance.sortWithChallengeMoons)
+                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+                if (__instance.serverTagInputField.text != string.Empty)
+                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+                if (tempLobbies != null && tempLobbies.Length > 0)
+                    combinedLobbies.AddRange(tempLobbies);
+                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] MoreCompany: {tempLobbies?.Length ?? 0}");
+            }
+
+            __instance.currentLobbyList = combinedLobbies.GroupBy(x => x.Id).Select(x => x.First()).ToArray();
+
+            if (__instance.currentLobbyList != null && __instance.currentLobbyList.Length != 0)
+            {
+                __instance.serverListBlankText.text = "";
+                __instance.lobbySlotPositionOffset = 0f;
+                __instance.loadLobbyListCoroutine = __instance.StartCoroutine(__instance.loadLobbyListAndFilter(__instance.currentLobbyList));
+            }
+            else
+            {
+                __instance.serverListBlankText.text = "No available servers to join.";
+                GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
+            }
+        }
+
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
         [HarmonyPostfix]
         private static IEnumerator loadLobbyListAndFilter(IEnumerator result)
         {
+            SteamLobbyManager lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
+            lobbyManager?.serverListBlankText?.gameObject?.SetActive(false);
+
             while (result.MoveNext())
                 yield return result.Current;
 
-            SteamLobbyManager lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
             lobbyManager?.serverListBlankText?.gameObject?.SetActive(lobbyManager.serverListBlankText.text != string.Empty);
+            GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
 
             LobbySlot[] lobbySlots = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
             foreach (LobbySlot lobbySlot in lobbySlots)
@@ -521,7 +616,7 @@ namespace LobbyImprovements
             // Hide MC lobbies with over 4 players if MC isn't loaded
             if (!Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
-                __instance.WithLower("mc_maxplayers", 5);
+                __instance.WithLower("maxplayers", 5);
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <AssemblyName>LobbyImprovements</AssemblyName>
+        <AssemblyName>uk.1a3.lobbyimprovements</AssemblyName>
+        <Product>LobbyImprovements</Product>
         <TargetFramework>netstandard2.1</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
