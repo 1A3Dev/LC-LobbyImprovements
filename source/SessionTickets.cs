@@ -108,7 +108,7 @@ namespace LobbyImprovements
                 if (response != AuthResponse.AuthTicketCanceled)
                     PluginLoader.StaticLogger.LogInfo($"[Steam] OnValidateAuthTicketResponse ({steamId}): {response}");
 
-                if (response != AuthResponse.OK && PluginLoader.steamSecureLobby.Value && NetworkManager.ServerClientId != PlayerManager.sv_steamPlayers[foundIndex].actualClientId)
+                if (response != AuthResponse.OK && PluginLoader.steamSecureLobby && NetworkManager.ServerClientId != PlayerManager.sv_steamPlayers[foundIndex].actualClientId)
                 {
                     string kickPrefix = "<size=12><color=red>Invalid Steam Ticket:<color=white>\n";
                     NetworkManager.Singleton.DisconnectClient(PlayerManager.sv_steamPlayers[foundIndex].actualClientId, $"{kickPrefix}{response}");

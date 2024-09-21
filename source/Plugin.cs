@@ -6,13 +6,14 @@ using System.Net;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
-using System.Threading.Tasks;
 using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using DunGen;
 using HarmonyLib;
+using LethalModDataLib.Attributes;
+using LethalModDataLib.Enums;
 using Steamworks;
 using Steamworks.Data;
 using TMPro;
@@ -36,11 +37,6 @@ namespace LobbyImprovements
         internal static ManualLogSource StaticLogger { get; private set; }
         internal static ConfigFile StaticConfig { get; private set; }
 
-        public static ConfigEntry<bool> steamSecureLobby;
-        public static ConfigEntry<bool> steamLobbyType_Vanilla;
-        public static ConfigEntry<bool> steamLobbyType_MoreCompany;
-        public static ConfigEntry<bool> steamLobbyType_Password;
-
         public static ConfigEntry<bool> recentlyPlayedWithOrbit;
 
         public static ConfigEntry<bool> lobbyNameFilterEnabled;
@@ -49,9 +45,21 @@ namespace LobbyImprovements
         public static ConfigEntry<string> lobbyNameFilterBlacklist;
         public static string[] lobbyNameParsedBlacklist;
 
-        public static ConfigEntry<bool> lanSecureLobby;
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
+
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static bool steamSecureLobby { get; set; } = false;
+
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static bool steamLobbyType_Vanilla { get; set; } = true;
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static bool steamLobbyType_MoreCompany { get; set; } = true;
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static bool steamLobbyType_Password { get; set; } = true;
+
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static bool lanSecureLobby { get; set; } = false;
 
         public static string lobbyPassword = null;
 
@@ -95,23 +103,6 @@ namespace LobbyImprovements
             StaticLogger = Logger;
             StaticConfig = Config;
 
-            steamSecureLobby = StaticConfig.Bind("Steam", "Secure Lobby", false, "Should players without a valid steam session token be kicked?");
-            steamSecureLobby.SettingChanged += (sender, args) =>
-            {
-                if (GameNetworkManager.Instance && !GameNetworkManager.Instance.disableSteam)
-                {
-                    if (GameNetworkManager.Instance.isHostingGame && GameNetworkManager.Instance.currentLobby.HasValue)
-                    {
-                        if (steamSecureLobby.Value)
-                            GameNetworkManager.Instance.currentLobby.Value.SetData("li_secure", "1");
-                        else
-                            GameNetworkManager.Instance.currentLobby.Value.DeleteData("li_secure");
-                    }
-                }
-            };
-            steamLobbyType_Vanilla = StaticConfig.Bind("Lobby List: Shown Types", "Vanilla", true, "Should you see vanilla lobbies on the lobby list?");
-            steamLobbyType_MoreCompany = StaticConfig.Bind("Lobby List: Shown Types", "MoreCompany", true, "Should you see morecompany lobbies on the lobby list?");
-            steamLobbyType_Password = StaticConfig.Bind("Lobby List: Shown Types", "Password Protected", true, "Should you see password protected lobbies on the lobby list?");
             recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
@@ -140,7 +131,6 @@ namespace LobbyImprovements
             };
             UpdateLobbyNameFilter();
 
-            lanSecureLobby = StaticConfig.Bind("LAN", "Secure Lobby", false, "Should players without a valid token be kicked? Enabling this will ensure you can ban players.");
             AcceptableValueRange<int> acceptablePortRange = new AcceptableValueRange<int>(1, 65535);
             lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a lobby", acceptablePortRange));
             lanDiscoveryPort = StaticConfig.Bind("LAN", "Discovery Port", 47777, new ConfigDescription("The port used for lobby discovery", acceptablePortRange));
@@ -181,13 +171,13 @@ namespace LobbyImprovements
         [HarmonyPostfix]
         private static void SLM_OnEnable(SteamLobbyManager __instance)
         {
-            if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam)
+            if (GameNetworkManager.Instance)
             {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or ip...";
-            }
-            else
-            {
-                __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
+                GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
+                if (GameNetworkManager.Instance.disableSteam)
+                    __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or ip...";
+                else
+                    __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
             }
 
             if (__instance.levelListContainer && !__instance.levelListContainer.gameObject.GetComponentInChildren<ContentSizeFitter>())
@@ -249,7 +239,7 @@ namespace LobbyImprovements
             List<Lobby> combinedLobbies = new List<Lobby>();
             bool hasMoreCompany = Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany");
 
-            if (PluginLoader.steamLobbyType_Vanilla.Value)
+            if (PluginLoader.steamLobbyType_Vanilla)
             {
                 LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
                     .WithMaxResults(50)
@@ -267,7 +257,25 @@ namespace LobbyImprovements
                 PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Vanilla: {tempLobbies?.Length ?? 0}");
             }
 
-            if (PluginLoader.steamLobbyType_Password.Value)
+            if (hasMoreCompany && PluginLoader.steamLobbyType_MoreCompany)
+            {
+                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+                    .WithMaxResults(50)
+                    .WithSlotsAvailable(1)
+                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+                    .WithEqual("password", 0)
+                    .WithHigher("maxplayers", 4);
+                if (!__instance.sortWithChallengeMoons)
+                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+                if (__instance.serverTagInputField.text != string.Empty)
+                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+                if (tempLobbies != null && tempLobbies.Length > 0)
+                    combinedLobbies.AddRange(tempLobbies);
+                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] MoreCompany: {tempLobbies?.Length ?? 0}");
+            }
+
+            if (PluginLoader.steamLobbyType_Password)
             {
                 LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
                     .WithMaxResults(50)
@@ -284,24 +292,6 @@ namespace LobbyImprovements
                 if (tempLobbies != null && tempLobbies.Length > 0)
                     combinedLobbies.AddRange(tempLobbies);
                 PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Password: {tempLobbies?.Length ?? 0}");
-            }
-
-            if (hasMoreCompany && PluginLoader.steamLobbyType_MoreCompany.Value)
-            {
-                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
-                    .WithMaxResults(50)
-                    .WithSlotsAvailable(1)
-                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
-                    .WithEqual("password", 0)
-                    .WithHigher("maxplayers", 4);
-                if (!__instance.sortWithChallengeMoons)
-                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
-                if (__instance.serverTagInputField.text != string.Empty)
-                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
-                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
-                if (tempLobbies != null && tempLobbies.Length > 0)
-                    combinedLobbies.AddRange(tempLobbies);
-                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] MoreCompany: {tempLobbies?.Length ?? 0}");
             }
 
             __instance.currentLobbyList = combinedLobbies.GroupBy(x => x.Id).Select(x => x.First()).ToArray();
@@ -329,6 +319,7 @@ namespace LobbyImprovements
             while (result.MoveNext())
                 yield return result.Current;
 
+            lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
             lobbyManager?.serverListBlankText?.gameObject?.SetActive(lobbyManager.serverListBlankText.text != string.Empty);
             GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
 
@@ -499,7 +490,7 @@ namespace LobbyImprovements
                             response.Approved = false;
                         }
                     }
-                    else if (PluginLoader.lanSecureLobby.Value)
+                    else if (PluginLoader.lanSecureLobby)
                     {
                         string kickPrefix = "<size=12><color=red>LobbyImprovements:<color=white>\n";
                         response.Reason = $"{kickPrefix}This lobby requires you to have the LobbyImprovements mod.";
@@ -560,7 +551,7 @@ namespace LobbyImprovements
                                 PluginLoader.StaticLogger.LogError(e);
                             }
                             PluginLoader.StaticLogger.LogInfo($"[Steam] ConnectionApproval ({steamId}): {authResponse}");
-                            if (authResponse != BeginAuthResult.OK && PluginLoader.steamSecureLobby.Value)
+                            if (authResponse != BeginAuthResult.OK && PluginLoader.steamSecureLobby)
                             {
                                 string kickPrefix = "<size=12><color=red>Invalid Steam Ticket:<color=white>\n";
                                 response.Reason = $"{kickPrefix}{response}";
@@ -585,7 +576,7 @@ namespace LobbyImprovements
                         else
                         {
                             PluginLoader.StaticLogger.LogInfo($"[Steam] ConnectionApproval ({steamId}): MissingTicket");
-                            if (PluginLoader.steamSecureLobby.Value)
+                            if (PluginLoader.steamSecureLobby)
                             {
                                 string kickPrefix = "<size=12><color=red>Missing Steam Ticket:<color=white>\n";
                                 response.Reason = $"{kickPrefix}This lobby requires you to have the LobbyImprovements mod.";

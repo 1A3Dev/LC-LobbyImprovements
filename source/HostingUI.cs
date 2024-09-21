@@ -6,12 +6,16 @@ using UnityEngine.UI;
 using Lobby = Steamworks.Data.Lobby;
 using System.Linq;
 using BepInEx.Bootstrap;
+using LethalModDataLib.Features;
+using LethalModDataLib.Helpers;
 
 namespace LobbyImprovements
 {
     [HarmonyPatch]
     public class HostingUI
     {
+        public static GameObject hostPanel = null;
+
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
         private static void MenuManager_Awake(MenuManager __instance)
@@ -25,6 +29,7 @@ namespace LobbyImprovements
                     Transform filesPanel = __instance.HostSettingsScreen.transform.Find("FilesPanel");
                     GameObject liPanel = GameObject.Instantiate(filesPanel.gameObject, filesPanel.parent);
                     liPanel.name = "LIPanel_Host";
+                    hostPanel = liPanel;
                     TextMeshProUGUI panelTitle = liPanel.transform.Find("EnterAName").gameObject.GetComponent<TextMeshProUGUI>();
                     panelTitle.transform.localPosition = new Vector3(0f, 100f, 0f);
                     panelTitle.fontSize = 14f;
@@ -198,16 +203,18 @@ namespace LobbyImprovements
                             {
                                 if (GameNetworkManager.Instance.disableSteam)
                                 {
-                                    PluginLoader.lanSecureLobby.Value = !PluginLoader.lanSecureLobby.Value;
-                                    secureToggleIcon.enabled = PluginLoader.lanSecureLobby.Value;
+                                    PluginLoader.lanSecureLobby = !PluginLoader.lanSecureLobby;
+                                    secureToggleIcon.enabled = PluginLoader.lanSecureLobby;
+                                    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.lanSecureLobby)));
                                 }
                                 else
                                 {
-                                    PluginLoader.steamSecureLobby.Value = !PluginLoader.steamSecureLobby.Value;
-                                    secureToggleIcon.enabled = PluginLoader.steamSecureLobby.Value;
+                                    PluginLoader.steamSecureLobby = !PluginLoader.steamSecureLobby;
+                                    secureToggleIcon.enabled = PluginLoader.steamSecureLobby;
+                                    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamSecureLobby)));
                                 }
-                                PluginLoader.StaticConfig.Save();
                             });
+                            secureToggleIcon.enabled = PluginLoader.steamSecureLobby;
 
                             if (secureToggleObj.transform.Find("ServerMaxPlayers") == null)
                             {
@@ -279,10 +286,11 @@ namespace LobbyImprovements
                         vanillaToggleBtn.onClick = new Button.ButtonClickedEvent();
                         vanillaToggleBtn.onClick.AddListener(() =>
                         {
-                            PluginLoader.steamLobbyType_Vanilla.Value = !PluginLoader.steamLobbyType_Vanilla.Value;
-                            vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla.Value;
-                            PluginLoader.StaticConfig.Save();
+                            PluginLoader.steamLobbyType_Vanilla = !PluginLoader.steamLobbyType_Vanilla;
+                            vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
+                            SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Vanilla)));
                         });
+                        vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
 
                         GameObject ppToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
                         ppToggleObj.name = "PPLobbyToggle";
@@ -295,10 +303,11 @@ namespace LobbyImprovements
                         ppToggleBtn.onClick = new Button.ButtonClickedEvent();
                         ppToggleBtn.onClick.AddListener(() =>
                         {
-                            PluginLoader.steamLobbyType_Password.Value = !PluginLoader.steamLobbyType_Password.Value;
-                            ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password.Value;
-                            PluginLoader.StaticConfig.Save();
+                            PluginLoader.steamLobbyType_Password = !PluginLoader.steamLobbyType_Password;
+                            ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
+                            SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Password)));
                         });
+                        ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
 
                         if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
                         {
@@ -313,10 +322,11 @@ namespace LobbyImprovements
                             mcToggleBtn.onClick = new Button.ButtonClickedEvent();
                             mcToggleBtn.onClick.AddListener(() =>
                             {
-                                PluginLoader.steamLobbyType_MoreCompany.Value = !PluginLoader.steamLobbyType_MoreCompany.Value;
-                                mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany.Value;
-                                PluginLoader.StaticConfig.Save();
+                                PluginLoader.steamLobbyType_MoreCompany = !PluginLoader.steamLobbyType_MoreCompany;
+                                mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
+                                SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_MoreCompany)));
                             });
+                            mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
                         }
                     }
                 }
@@ -333,15 +343,6 @@ namespace LobbyImprovements
                 __instance.HostSettingsOptionsNormal.SetActive(value: true);
                 Object.FindFirstObjectByType<SaveFileUISlot>()?.SetButtonColorForAllFileSlots();
                 __instance.HostSetLobbyPublic(__instance.hostSettings_LobbyPublic);
-            }
-
-            Image secureToggleIcon = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions/OptionsNormal/ServerSecureToggle/Arrow (1)")?.GetComponentInChildren<Image>();
-            if (secureToggleIcon != null)
-            {
-                if (GameNetworkManager.Instance.disableSteam)
-                    secureToggleIcon.enabled = PluginLoader.lanSecureLobby.Value;
-                else
-                    secureToggleIcon.enabled = PluginLoader.steamSecureLobby.Value;
             }
 
             TMP_Dropdown accessDropdown = __instance.HostSettingsScreen.transform.Find("HostSettingsContainer/LobbyHostOptions/OptionsNormal/ServerAccessDropdown")?.GetComponent<TMP_Dropdown>();
@@ -368,7 +369,7 @@ namespace LobbyImprovements
                 }
             }
 
-            PluginLoader.SetLobbyPassword(__instance.HostSettingsOptionsNormal.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text);
+            PluginLoader.SetLobbyPassword(hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text);
             return true;
         }
 
@@ -385,7 +386,7 @@ namespace LobbyImprovements
             {
                 if (!__instance.menuNotification.transform.Find("Panel/ServerPasswordField"))
                 {
-                    GameObject tmpField = GameObject.Instantiate(__instance.HostSettingsOptionsNormal.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
+                    GameObject tmpField = GameObject.Instantiate(hostPanel.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
                     tmpField.name = "ServerPasswordField";
                     tmpField.transform.localPosition = new Vector3(0f, 5f, 0f);
                 }
@@ -425,6 +426,7 @@ namespace LobbyImprovements
             else
             {
                 __instance.menuNotification.transform.Find("Panel/ServerPasswordField")?.gameObject?.SetActive(false);
+                __instance.menuNotification.transform.Find("Panel/JoinButton")?.gameObject?.SetActive(false);
             }
         }
 
@@ -440,7 +442,7 @@ namespace LobbyImprovements
 
             if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
                 lobby.SetData("password", "1");
-            if (PluginLoader.steamSecureLobby.Value)
+            if (PluginLoader.steamSecureLobby)
                 lobby.SetData("li_secure", "1");
         }
 

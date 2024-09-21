@@ -27,6 +27,7 @@
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="UnityEngine.Modules" Version="2023.2.4" IncludeAssets="compile" />
         <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.*" PrivateAssets="all" />
+        <PackageReference Include="MaxWasUnavailable.LethalModDataLib" Version="1.*" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup Condition="$(CI) != 'true'">
