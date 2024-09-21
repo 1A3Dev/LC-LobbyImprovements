@@ -174,6 +174,7 @@ namespace LobbyImprovements
                                     }
                                 }
                             });
+                            privacyDropdownObj.SetActive(true);
                         }
                     }
 

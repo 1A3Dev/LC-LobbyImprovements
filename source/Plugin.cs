@@ -310,6 +310,28 @@ namespace LobbyImprovements
         }
 
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
+        [HarmonyPrefix]
+        private static void loadLobbyListAndFilter_Prefix(ref Lobby[] lobbyList)
+        {
+            Array.Sort(lobbyList, (x, y) => {
+                if (x.MemberCount == y.MemberCount)
+                {
+                    if (x.MaxMembers == y.MaxMembers)
+                    {
+                        return x.GetData("name").CompareTo(y.GetData("name"));
+                    }
+                    else
+                    {
+                        return y.MaxMembers - x.MaxMembers;
+                    }
+                }
+                else
+                {
+                    return y.MemberCount - x.MemberCount;
+                }
+            });
+        }
+        [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
         [HarmonyPostfix]
         private static IEnumerator loadLobbyListAndFilter(IEnumerator result)
         {
@@ -338,7 +360,7 @@ namespace LobbyImprovements
                 }
 
                 // Move the text for challenge moon lobbies
-                if (lobbySlot.thisLobby.GetData("chal") == "1")
+                if (lobbySlot.thisLobby.GetData("chal") == "t")
                 {
                     TextMeshProUGUI origChalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     origChalModeText?.gameObject?.SetActive(false);

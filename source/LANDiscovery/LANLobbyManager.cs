@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using BepInEx.Bootstrap;
+using System;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -50,34 +51,19 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-                if (sortDropdown != null)
-                {
-                    GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
-                    if (sortDropdown.options[0].text != "ASC: Name")
-                    {
-                        sortDropdown.ClearOptions();
-                        sortDropdown.AddOptions(new List<TMP_Dropdown.OptionData>()
-                        {
-                            new("ASC: Name"),
-                            new("DESC: Name"),
-                            new("ASC: Players"),
-                            new("DESC: Players"),
-                        });
-                        __instance.sortByDistanceSetting = sortDropdown.value;
-                    }
-                }
+                GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
+                GameObject.Find("LobbyList/ListPanel/Dropdown")?.SetActive(false);
 
                 TMP_InputField lanPlayerNameField = __instance.serverTagInputField.transform.parent.Find("PlayerNameInputField")?.gameObject.GetComponent<TMP_InputField>();
                 if (lanPlayerNameField == null)
                 {
                     GameObject lanPlayerNameObj = GameObject.Instantiate(__instance.serverTagInputField.gameObject, __instance.serverTagInputField.transform.parent);
                     lanPlayerNameObj.name = "PlayerNameInputField";
-                    lanPlayerNameObj.transform.localPosition = new Vector3(370f, -185f, 0f);
+                    lanPlayerNameObj.transform.localPosition = new Vector3(225f, 211.142f, 0f);
                     lanPlayerNameField = lanPlayerNameObj.GetComponent<TMP_InputField>();
                     lanPlayerNameField.characterLimit = 32;
                     lanPlayerNameField.characterValidation = TMP_InputField.CharacterValidation.Alphanumeric;
-                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter player name...";
+                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Choose a username";
                     lanPlayerNameField.onEndEdit = new TMP_InputField.SubmitEvent();
                     lanPlayerNameField.onEndEdit.AddListener(s =>
                     {
@@ -142,25 +128,23 @@ namespace LobbyImprovements.LANDiscovery
 
             bool anyResults = false;
 
-            TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-            if (sortDropdown != null)
-            {
-                switch (__instance.sortByDistanceSetting)
+            Array.Sort(lobbyList, (x, y) => {
+                if (x.MemberCount == y.MemberCount)
                 {
-                    case 0: // ASC: Name
-                        lobbyList = lobbyList.OrderBy(x => x.LobbyName).ToArray();
-                        break;
-                    case 1: // DESC: Name
-                        lobbyList = lobbyList.OrderByDescending(x => x.LobbyName).ToArray();
-                        break;
-                    case 2: // ASC: Players
-                        lobbyList = lobbyList.OrderBy(x => x.MemberCount).ToArray();
-                        break;
-                    case 3: // DESC: Players
-                        lobbyList = lobbyList.OrderByDescending(x => x.MemberCount).ToArray();
-                        break;
+                    if (x.MaxMembers == y.MaxMembers)
+                    {
+                        return x.LobbyName.CompareTo(y.LobbyName);
+                    }
+                    else
+                    {
+                        return y.MaxMembers - x.MaxMembers;
+                    }
                 }
-            }
+                else
+                {
+                    return y.MemberCount - x.MemberCount;
+                }
+            });
 
             for (int i = 0; i < lobbyList.Length; i++)
             {
