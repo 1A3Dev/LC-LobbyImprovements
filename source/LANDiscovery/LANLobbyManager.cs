@@ -75,11 +75,11 @@ namespace LobbyImprovements.LANDiscovery
                 LoadServerList_LAN(__instance);
                 return false;
             }
-            else if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
-            {
-                General_Patches.LoadServerList_Steam(__instance);
-                return false;
-            }
+            //else if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            //{
+            //    General_Patches.LoadServerList_Steam(__instance);
+            //    return false;
+            //}
 
             return true;
         }

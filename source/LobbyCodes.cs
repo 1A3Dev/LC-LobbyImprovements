@@ -66,22 +66,9 @@ namespace LobbyImprovements
                 yield break;
             }
 
-            PluginLoader.StaticLogger.LogWarning("[JoinLobby] Attempting to find lobby by id: " + lobbyId);
-            Task<Lobby?> joinTask = SteamMatchmaking.JoinLobbyAsync(lobbyId);
-            yield return new WaitUntil(() => joinTask.IsCompleted);
-            if (!joinTask.Result.HasValue)
-            {
-                PluginLoader.StaticLogger.LogWarning("[JoinLobby] Failed to find lobby by id: " + lobbyId);
-                yield break;
-            }
-            Lobby lobby = joinTask.Result.Value;
-            if (lobby.GetData("vers").IsNullOrWhiteSpace())
-            {
-                PluginLoader.StaticLogger.LogWarning("[JoinLobby] Failed to join lobby by id: " + lobbyId);
-                yield break;
-            }
+            Lobby lobby = new Lobby(lobbyId);
+            PluginLoader.StaticLogger.LogWarning("Attempting to join lobby by id: " + lobby.Id);
             LobbySlot.JoinLobbyAfterVerifying(lobby, lobby.Id);
-            PluginLoader.StaticLogger.LogWarning("[JoinLobby] Successfully found lobby by id: " + lobbyId);
             __instance.serverTagInputField.text = "";
         }
     }
