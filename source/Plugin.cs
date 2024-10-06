@@ -51,12 +51,12 @@ namespace LobbyImprovements
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool steamSecureLobby { get; set; } = false;
 
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
-        public static bool steamLobbyType_Vanilla { get; set; } = true;
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
-        public static bool steamLobbyType_MoreCompany { get; set; } = true;
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
-        public static bool steamLobbyType_Password { get; set; } = true;
+        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        //public static bool steamLobbyType_Vanilla { get; set; } = true;
+        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        //public static bool steamLobbyType_MoreCompany { get; set; } = true;
+        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        //public static bool steamLobbyType_Password { get; set; } = true;
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool lanSecureLobby { get; set; } = false;
@@ -221,93 +221,93 @@ namespace LobbyImprovements
             return true;
         }
 
-        public static async void LoadServerList_Steam(SteamLobbyManager __instance)
-        {
-            if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
+        //public static async void LoadServerList_Steam(SteamLobbyManager __instance)
+        //{
+        //    if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
 
-            __instance.refreshServerListTimer = 0f;
-            __instance.serverListBlankText.text = "Loading server list...";
-            __instance.serverListBlankText.gameObject.SetActive(true);
-            __instance.currentLobbyList = null;
-            GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
-            LobbySlot[] array = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
-            for (int i = 0; i < array.Length; i++)
-            {
-                Object.Destroy(array[i].gameObject);
-            }
+        //    __instance.refreshServerListTimer = 0f;
+        //    __instance.serverListBlankText.text = "Loading server list...";
+        //    __instance.serverListBlankText.gameObject.SetActive(true);
+        //    __instance.currentLobbyList = null;
+        //    GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
+        //    LobbySlot[] array = Object.FindObjectsByType<LobbySlot>(FindObjectsSortMode.InstanceID);
+        //    for (int i = 0; i < array.Length; i++)
+        //    {
+        //        Object.Destroy(array[i].gameObject);
+        //    }
 
-            List<Lobby> combinedLobbies = new List<Lobby>();
-            bool hasMoreCompany = Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany");
+        //    List<Lobby> combinedLobbies = new List<Lobby>();
+        //    bool hasMoreCompany = Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany");
 
-            if (PluginLoader.steamLobbyType_Vanilla)
-            {
-                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
-                    .WithMaxResults(50)
-                    .WithSlotsAvailable(1)
-                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
-                    .WithEqual("password", 0)
-                    .WithLower("maxplayers", 5);
-                if (!__instance.sortWithChallengeMoons)
-                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
-                if (__instance.serverTagInputField.text != string.Empty)
-                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
-                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
-                if (tempLobbies != null && tempLobbies.Length > 0)
-                    combinedLobbies.AddRange(tempLobbies);
-                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Vanilla: {tempLobbies?.Length ?? 0}");
-            }
+        //    if (PluginLoader.steamLobbyType_Vanilla)
+        //    {
+        //        LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+        //            .WithMaxResults(50)
+        //            .WithSlotsAvailable(1)
+        //            .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+        //            .WithEqual("password", 0)
+        //            .WithLower("maxplayers", 5);
+        //        if (!__instance.sortWithChallengeMoons)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+        //        if (__instance.serverTagInputField.text != string.Empty)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+        //        Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+        //        if (tempLobbies != null && tempLobbies.Length > 0)
+        //            combinedLobbies.AddRange(tempLobbies);
+        //        PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Vanilla: {tempLobbies?.Length ?? 0}");
+        //    }
 
-            if (hasMoreCompany && PluginLoader.steamLobbyType_MoreCompany)
-            {
-                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
-                    .WithMaxResults(50)
-                    .WithSlotsAvailable(1)
-                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
-                    .WithEqual("password", 0)
-                    .WithHigher("maxplayers", 4);
-                if (!__instance.sortWithChallengeMoons)
-                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
-                if (__instance.serverTagInputField.text != string.Empty)
-                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
-                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
-                if (tempLobbies != null && tempLobbies.Length > 0)
-                    combinedLobbies.AddRange(tempLobbies);
-                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] MoreCompany: {tempLobbies?.Length ?? 0}");
-            }
+        //    if (hasMoreCompany && PluginLoader.steamLobbyType_MoreCompany)
+        //    {
+        //        LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+        //            .WithMaxResults(50)
+        //            .WithSlotsAvailable(1)
+        //            .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+        //            .WithEqual("password", 0)
+        //            .WithHigher("maxplayers", 4);
+        //        if (!__instance.sortWithChallengeMoons)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+        //        if (__instance.serverTagInputField.text != string.Empty)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+        //        Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+        //        if (tempLobbies != null && tempLobbies.Length > 0)
+        //            combinedLobbies.AddRange(tempLobbies);
+        //        PluginLoader.StaticLogger.LogInfo($"[Lobby Count] MoreCompany: {tempLobbies?.Length ?? 0}");
+        //    }
 
-            if (PluginLoader.steamLobbyType_Password)
-            {
-                LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
-                    .WithMaxResults(50)
-                    .WithSlotsAvailable(1)
-                    .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
-                    .WithEqual("password", 1);
-                if (!__instance.sortWithChallengeMoons)
-                    lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
-                if (__instance.serverTagInputField.text != string.Empty)
-                    lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
-                if (!hasMoreCompany)
-                    lobbyQuery = lobbyQuery.WithLower("maxplayers", 5);
-                Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
-                if (tempLobbies != null && tempLobbies.Length > 0)
-                    combinedLobbies.AddRange(tempLobbies);
-                PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Password: {tempLobbies?.Length ?? 0}");
-            }
+        //    if (PluginLoader.steamLobbyType_Password)
+        //    {
+        //        LobbyQuery lobbyQuery = SteamMatchmaking.LobbyList
+        //            .WithMaxResults(50)
+        //            .WithSlotsAvailable(1)
+        //            .WithKeyValue("vers", GameNetworkManager.Instance.gameVersionNum.ToString())
+        //            .WithEqual("password", 1);
+        //        if (!__instance.sortWithChallengeMoons)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("chal", "f");
+        //        if (__instance.serverTagInputField.text != string.Empty)
+        //            lobbyQuery = lobbyQuery.WithKeyValue("tag", __instance.serverTagInputField.text);
+        //        if (!hasMoreCompany)
+        //            lobbyQuery = lobbyQuery.WithLower("maxplayers", 5);
+        //        Lobby[] tempLobbies = await lobbyQuery.RequestAsync();
+        //        if (tempLobbies != null && tempLobbies.Length > 0)
+        //            combinedLobbies.AddRange(tempLobbies);
+        //        PluginLoader.StaticLogger.LogInfo($"[Lobby Count] Password: {tempLobbies?.Length ?? 0}");
+        //    }
 
-            __instance.currentLobbyList = combinedLobbies.GroupBy(x => x.Id).Select(x => x.First()).ToArray();
+        //    __instance.currentLobbyList = combinedLobbies.GroupBy(x => x.Id).Select(x => x.First()).ToArray();
 
-            if (__instance.currentLobbyList != null && __instance.currentLobbyList.Length != 0)
-            {
-                __instance.serverListBlankText.text = "";
-                __instance.lobbySlotPositionOffset = 0f;
-                __instance.loadLobbyListCoroutine = __instance.StartCoroutine(__instance.loadLobbyListAndFilter(__instance.currentLobbyList));
-            }
-            else
-            {
-                __instance.serverListBlankText.text = "No available servers to join.";
-                GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
-            }
-        }
+        //    if (__instance.currentLobbyList != null && __instance.currentLobbyList.Length != 0)
+        //    {
+        //        __instance.serverListBlankText.text = "";
+        //        __instance.lobbySlotPositionOffset = 0f;
+        //        __instance.loadLobbyListCoroutine = __instance.StartCoroutine(__instance.loadLobbyListAndFilter(__instance.currentLobbyList));
+        //    }
+        //    else
+        //    {
+        //        __instance.serverListBlankText.text = "No available servers to join.";
+        //        GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
+        //    }
+        //}
 
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
         [HarmonyPrefix]
@@ -645,4 +645,62 @@ namespace LobbyImprovements
             }
         }
     }
+
+    //[HarmonyPatch]
+    //public class LoadServerListTranspiler
+    //{
+    //    static MethodBase TargetMethod()
+    //    {
+    //        var stateMachineType = AccessTools.TypeByName("SteamLobbyManager+<LoadServerList>d__19");
+    //        return AccessTools.Method(stateMachineType, "MoveNext");
+    //    }
+
+    //    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    //    {
+    //        int foundAssignment = 0;
+    //        foreach (var instruction in instructions)
+    //        {
+    //            PluginLoader.StaticLogger.LogInfo($"[{instruction.opcode}] {instruction.operand?.ToString()} [{string.Join(',', instruction.labels)}]");
+
+    //            if (instruction.opcode == OpCodes.Stfld && instruction.operand is FieldInfo fieldInfo && fieldInfo.Name == "currentLobbyList")
+    //            {
+    //                foundAssignment++;
+
+    //                yield return instruction;
+
+    //                //if (foundAssignment == 3)
+    //                //{
+    //                //    CodeInstruction instruction1 = new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(LoadServerListTranspiler), nameof(LocalAsyncMethod)));
+    //                //    CodeInstruction instruction2 = new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Task), nameof(Task.GetAwaiter)));
+    //                //    CodeInstruction instruction3 = new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(System.Runtime.CompilerServices.TaskAwaiter), nameof(System.Runtime.CompilerServices.TaskAwaiter.GetResult)));
+    //                //    CodeInstruction instruction4 = new CodeInstruction(OpCodes.Pop);
+    //                //    PluginLoader.StaticLogger.LogWarning($"[{instruction1.opcode}] {instruction1.operand?.ToString()} [{string.Join(',', instruction1.labels)}]");
+    //                //    PluginLoader.StaticLogger.LogWarning($"[{instruction2.opcode}] {instruction2.operand?.ToString()} [{string.Join(',', instruction2.labels)}]");
+    //                //    PluginLoader.StaticLogger.LogWarning($"[{instruction3.opcode}] {instruction3.operand?.ToString()} [{string.Join(',', instruction3.labels)}]");
+    //                //    PluginLoader.StaticLogger.LogWarning($"[{instruction4.opcode}] {instruction4.operand?.ToString()} [{string.Join(',', instruction4.labels)}]");
+    //                //    yield return instruction1;
+    //                //    yield return instruction2;
+    //                //    yield return new CodeInstruction(OpCodes.Stloc_S, 4);
+    //                //    yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
+    //                //    yield return new CodeInstruction(OpCodes.Callvirt, AccessTools.PropertyGetter(typeof(System.Runtime.CompilerServices.TaskAwaiter), nameof(System.Runtime.CompilerServices.TaskAwaiter.IsCompleted)));
+    //                //    yield return new CodeInstruction(OpCodes.Ldloc_S, 4);
+    //                //    yield return instruction3;
+    //                //    yield return instruction4;
+    //                //    yield return new CodeInstruction(OpCodes.Ldloc_0);
+    //                //}
+    //            }
+    //            else
+    //            {
+    //                yield return instruction;
+    //            }
+    //        }
+    //    }
+
+    //    public static async Task LocalAsyncMethod()
+    //    {
+    //        PluginLoader.StaticLogger.LogInfo("[TEST1] Async operation started.");
+    //        await Task.Delay(10000);
+    //        PluginLoader.StaticLogger.LogInfo("[TEST1] Async operation completed.");
+    //    }
+    //}
 }

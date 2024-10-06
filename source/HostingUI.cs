@@ -215,9 +215,12 @@ namespace LobbyImprovements
                                     SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamSecureLobby)));
                                 }
                             });
-                            secureToggleIcon.enabled = PluginLoader.steamSecureLobby;
+                            if (GameNetworkManager.Instance.disableSteam)
+                                secureToggleIcon.enabled = PluginLoader.lanSecureLobby;
+                            else
+                                secureToggleIcon.enabled = PluginLoader.steamSecureLobby;
 
-                            if (secureToggleObj.transform.Find("ServerMaxPlayers") == null)
+                            if (secureToggleObj.transform.parent.Find("ServerMaxPlayers") == null)
                             {
                                 GameObject maxPlayersParentObj = GameObject.Instantiate(secureToggleObj, secureToggleObj.transform.parent);
                                 maxPlayersParentObj.name = "ServerMaxPlayers";
@@ -275,6 +278,9 @@ namespace LobbyImprovements
                             }
                         }
 
+                        //TODO Remove when improved lobby querying is done
+                        lobbyFilterPopup.SetActive(false);
+
                         float currentHeight = 65f;
                         GameObject vanillaToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
                         vanillaToggleObj.name = "VanillaLobbyToggle";
@@ -285,13 +291,13 @@ namespace LobbyImprovements
                         Image vanillaToggleIcon = vanillaToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
                         Button vanillaToggleBtn = vanillaToggleObj.GetComponentInChildren<Button>();
                         vanillaToggleBtn.onClick = new Button.ButtonClickedEvent();
-                        vanillaToggleBtn.onClick.AddListener(() =>
-                        {
-                            PluginLoader.steamLobbyType_Vanilla = !PluginLoader.steamLobbyType_Vanilla;
-                            vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
-                            SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Vanilla)));
-                        });
-                        vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
+                        //vanillaToggleBtn.onClick.AddListener(() =>
+                        //{
+                        //    PluginLoader.steamLobbyType_Vanilla = !PluginLoader.steamLobbyType_Vanilla;
+                        //    vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
+                        //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Vanilla)));
+                        //});
+                        //vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
 
                         GameObject ppToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
                         ppToggleObj.name = "PPLobbyToggle";
@@ -302,13 +308,13 @@ namespace LobbyImprovements
                         Image ppToggleIcon = ppToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
                         Button ppToggleBtn = ppToggleObj.GetComponentInChildren<Button>();
                         ppToggleBtn.onClick = new Button.ButtonClickedEvent();
-                        ppToggleBtn.onClick.AddListener(() =>
-                        {
-                            PluginLoader.steamLobbyType_Password = !PluginLoader.steamLobbyType_Password;
-                            ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
-                            SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Password)));
-                        });
-                        ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
+                        //ppToggleBtn.onClick.AddListener(() =>
+                        //{
+                        //    PluginLoader.steamLobbyType_Password = !PluginLoader.steamLobbyType_Password;
+                        //    ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
+                        //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Password)));
+                        //});
+                        //ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
 
                         if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
                         {
@@ -321,13 +327,13 @@ namespace LobbyImprovements
                             Image mcToggleIcon = mcToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
                             Button mcToggleBtn = mcToggleObj.GetComponentInChildren<Button>();
                             mcToggleBtn.onClick = new Button.ButtonClickedEvent();
-                            mcToggleBtn.onClick.AddListener(() =>
-                            {
-                                PluginLoader.steamLobbyType_MoreCompany = !PluginLoader.steamLobbyType_MoreCompany;
-                                mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
-                                SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_MoreCompany)));
-                            });
-                            mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
+                            //mcToggleBtn.onClick.AddListener(() =>
+                            //{
+                            //    PluginLoader.steamLobbyType_MoreCompany = !PluginLoader.steamLobbyType_MoreCompany;
+                            //    mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
+                            //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_MoreCompany)));
+                            //});
+                            //mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
                         }
                     }
                 }
@@ -360,13 +366,26 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
-            if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly && LobbyNameFilter.offensiveWords.Any(x => __instance.lobbyNameInputField.text.ToLower().Contains(x)))
+            if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
-                string blockMessage = "This lobby name is blocked in vanilla. If you wish to use it anyway click confirm again.";
-                if (__instance.tipTextHostSettings.text != blockMessage)
+                if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
                 {
-                    __instance.tipTextHostSettings.text = blockMessage;
+                    __instance.tipTextHostSettings.text = "Password Protection is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;
+                }
+                else if (PluginLoader.steamSecureLobby)
+                {
+                    __instance.tipTextHostSettings.text = "Validate Steam Sessions is not currently usable in 'public' lobbies! This will be changed in future.";
+                    return false;
+                }
+                else if (LobbyNameFilter.offensiveWords.Any(x => __instance.lobbyNameInputField.text.ToLower().Contains(x)))
+                {
+                    string blockMessage = "This lobby name is blocked in vanilla. If you wish to use it anyway click confirm again.";
+                    if (__instance.tipTextHostSettings.text != blockMessage)
+                    {
+                        __instance.tipTextHostSettings.text = blockMessage;
+                        return false;
+                    }
                 }
             }
 
