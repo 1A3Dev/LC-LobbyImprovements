@@ -366,9 +366,10 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
+            string tmpPassword = hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
             if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
-                if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
+                if (!string.IsNullOrWhiteSpace(tmpPassword))
                 {
                     __instance.tipTextHostSettings.text = "Password Protection is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;
@@ -389,7 +390,7 @@ namespace LobbyImprovements
                 }
             }
 
-            PluginLoader.SetLobbyPassword(hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text);
+            PluginLoader.SetLobbyPassword(tmpPassword);
             return true;
         }
 
