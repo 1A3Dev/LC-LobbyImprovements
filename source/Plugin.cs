@@ -19,14 +19,10 @@ using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
 {
-    [BepInPlugin(modGUID, "LobbyImprovements", modVersion)]
+    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
     internal class PluginLoader : BaseUnityPlugin
     {
-        private const string modGUID = "Dev1A3.LobbyImprovements";
-
-        private readonly Harmony harmony = new Harmony(modGUID);
-
-        private const string modVersion = "1.0.0";
+        private readonly Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
         private static bool initialized;
 
@@ -71,7 +67,7 @@ namespace LobbyImprovements
             StaticLogger = Logger;
             StaticConfig = Config;
 
-            recentlyPlayedWithOrbit = StaticConfig.Bind("Recent Players", "Enabled In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
+            recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
             lobbyNameFilterEnabled.SettingChanged += (sender, args) =>

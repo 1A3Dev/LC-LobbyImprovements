@@ -1,3 +1,7 @@
+### 1.0.4
+
+- Fixed an issue with lobby codes that caused the 4th player to be unable to join
+
 ### 1.0.3
 
 - Lobby List Changes
