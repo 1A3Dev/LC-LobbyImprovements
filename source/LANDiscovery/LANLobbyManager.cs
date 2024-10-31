@@ -192,7 +192,7 @@ namespace LobbyImprovements.LANDiscovery
                     TextMeshProUGUI origChalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     origChalModeText?.gameObject?.SetActive(false);
 
-                    tags.Add("<color=magenta>CHALLENGE MODE</color>");
+                    tags.Add("<color=purple>CHALLENGE</color>");
                 }
                 else
                 {
@@ -200,23 +200,21 @@ namespace LobbyImprovements.LANDiscovery
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers")?.GetComponent<TextMeshProUGUI>();
                 }
 
-                if (lobbyList[i].IsSecure)
-                    tags.Add("<color=red>SECURE</color>");
-                
                 if (lobbyList[i].IsPasswordProtected)
-                    tags.Add("<color=orange>PASSWORD</color>");
+                    tags.Add("<color=yellow>PASSWORD</color>");
+                
+                if (lobbyList[i].IsSecure)
+                    tags.Add("<color=green>SECURE</color>");
                 
                 GameObject lobbyTagsObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
                 lobbyTagsObj.name = "TagsText";
                 TextMeshProUGUI lobbyTagsText = lobbyTagsObj?.GetComponent<TextMeshProUGUI>();
                 if (lobbyTagsText != null)
                 {
-                    lobbyTagsText.transform.localPosition = new Vector3(-25f, -16f, 0f);
+                    lobbyTagsText.transform.localPosition = new Vector3(-25f, -15f, 0f);
                     lobbyTagsText.transform.localScale = new Vector3(1f, 1f, 1f);
                     lobbyTagsText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                    // lobbyTagsText.color = Color.green;
                     lobbyTagsText.alpha = 0.4f;
-                    tags.Sort();
                     lobbyTagsText.text = string.Join(", ", tags);
                 }
 
