@@ -309,7 +309,7 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPostfix]
         private static void EnableLeaderboardDisplay(MenuManager __instance, bool enable)
         {
-            __instance.HostSettingsScreen.transform.Find("LIPanel")?.gameObject?.SetActive(!enable);
+            HostingUI.hostPanel?.gameObject?.SetActive(!enable);
 
             if (enable && !__instance.requestingLeaderboard && GameNetworkManager.Instance.disableSteam)
             {
