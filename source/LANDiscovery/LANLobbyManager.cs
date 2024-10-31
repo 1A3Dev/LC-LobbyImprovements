@@ -183,23 +183,16 @@ namespace LobbyImprovements.LANDiscovery
                 LANLobbySlot componentInChildren = originalSlot.gameObject.AddComponent<LANLobbySlot>();
                 Object.Destroy(originalSlot);
 
+                List<string> tags = new List<string>();
+                
                 if (lobbyList[i].IsChallengeMoon)
                 {
                     componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName (1)")?.GetComponent<TextMeshProUGUI>();
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers (2)")?.GetComponent<TextMeshProUGUI>();
-
                     TextMeshProUGUI origChalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     origChalModeText?.gameObject?.SetActive(false);
 
-                    GameObject chalModeTextObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
-                    chalModeTextObj.name = "ChalText";
-                    TextMeshProUGUI chalModeText = chalModeTextObj?.GetComponent<TextMeshProUGUI>();
-                    chalModeText.transform.localPosition = new Vector3(-25f, -4f, 0f);
-                    chalModeText.transform.localScale = new Vector3(1f, 1f, 1f);
-                    chalModeText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                    chalModeText.color = Color.magenta;
-                    chalModeText.alpha = 0.4f;
-                    chalModeText.text = "CHALLENGE MODE";
+                    tags.Add("<color=magenta>CHALLENGE MODE</color>");
                 }
                 else
                 {
@@ -208,19 +201,23 @@ namespace LobbyImprovements.LANDiscovery
                 }
 
                 if (lobbyList[i].IsSecure)
+                    tags.Add("<color=red>SECURE</color>");
+                
+                if (lobbyList[i].IsPasswordProtected)
+                    tags.Add("<color=orange>PASSWORD</color>");
+                
+                GameObject lobbyTagsObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
+                lobbyTagsObj.name = "TagsText";
+                TextMeshProUGUI lobbyTagsText = lobbyTagsObj?.GetComponent<TextMeshProUGUI>();
+                if (lobbyTagsText != null)
                 {
-                    GameObject secureTextObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
-                    secureTextObj.name = "SecureText";
-                    TextMeshProUGUI secureText = secureTextObj?.GetComponent<TextMeshProUGUI>();
-                    if (secureText != null)
-                    {
-                        secureText.transform.localPosition = new Vector3(-25f, -15f, 0f);
-                        secureText.transform.localScale = new Vector3(1f, 1f, 1f);
-                        secureText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                        secureText.color = Color.green;
-                        secureText.alpha = 0.4f;
-                        secureText.text = "SECURE: \U00002713";
-                    }
+                    lobbyTagsText.transform.localPosition = new Vector3(-25f, -16f, 0f);
+                    lobbyTagsText.transform.localScale = new Vector3(1f, 1f, 1f);
+                    lobbyTagsText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                    // lobbyTagsText.color = Color.green;
+                    lobbyTagsText.alpha = 0.4f;
+                    tags.Sort();
+                    lobbyTagsText.text = string.Join(", ", tags);
                 }
 
                 if (componentInChildren.LobbyName)

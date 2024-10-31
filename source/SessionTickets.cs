@@ -4,6 +4,7 @@ using Netcode.Transports.Facepunch;
 using Newtonsoft.Json;
 using Steamworks;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using Unity.Netcode;
@@ -30,7 +31,9 @@ namespace LobbyImprovements
             using (writer)
             {
                 writer.WriteValueSafe(activePlayerStr);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("LI_CL_ReceivePlayerInfo", writer, NetworkDelivery.Reliable);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("LI_CL_ReceivePlayerInfo", writer, writer.Capacity > 1300
+                    ? NetworkDelivery.ReliableFragmentedSequenced
+                    : NetworkDelivery.Reliable);
             }
         }
 
@@ -46,7 +49,9 @@ namespace LobbyImprovements
             using (writer)
             {
                 writer.WriteValueSafe(activePlayerStr);
-                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("LI_CL_ReceivePlayerInfo", writer, NetworkDelivery.Reliable);
+                NetworkManager.Singleton.CustomMessagingManager.SendNamedMessageToAll("LI_CL_ReceivePlayerInfo", writer, writer.Capacity > 1300
+                    ? NetworkDelivery.ReliableFragmentedSequenced
+                    : NetworkDelivery.Reliable);
             }
         }
 
@@ -70,7 +75,9 @@ namespace LobbyImprovements
                 using (writer)
                 {
                     writer.WriteValueSafe(activePlayerStr);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_CL_ReceiveAllPlayerInfo", clientId, writer, NetworkDelivery.Reliable);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_CL_ReceiveAllPlayerInfo", clientId, writer, writer.Capacity > 1300
+                        ? NetworkDelivery.ReliableFragmentedSequenced
+                        : NetworkDelivery.Reliable);
                 }
             }
             else
@@ -93,7 +100,9 @@ namespace LobbyImprovements
                 using (writer)
                 {
                     writer.WriteValueSafe(activePlayerStr);
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_CL_ReceiveAllPlayerInfo", clientId, writer, NetworkDelivery.Reliable);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_CL_ReceiveAllPlayerInfo", clientId, writer, writer.Capacity > 1300
+                        ? NetworkDelivery.ReliableFragmentedSequenced
+                        : NetworkDelivery.Reliable);
                 }
             }
         }
@@ -146,6 +155,26 @@ namespace LobbyImprovements
     {
         internal static AuthTicket currentTicket;
 
+        internal static string ParsePlayerName(string playerName, int playerClientId)
+        {
+            string text = GameNetworkManager.Instance.NoPunctuation(playerName ?? "");
+            text = Regex.Replace(text, "[^\\w\\._]", "");
+            if (text == string.Empty || text.Length == 0)
+            {
+                text = $"Player #{playerClientId}";
+            }
+            else if (text.Length <= 2)
+            {
+                text += "0";
+            }
+            else if (text.Length > 32)
+            {
+                text = text.Substring(0, 32);
+            }
+
+            return text;
+        }
+        
         private static Color profileIconColor = Color.clear;
         internal static void UpdatedPlayerInfo(CL_LANPlayer playerInfo)
         {
@@ -156,20 +185,7 @@ namespace LobbyImprovements
                 // [LAN] Update Username
                 if (playerInfo.playerName != StartOfRound.Instance.allPlayerScripts[playerClientId].playerUsername)
                 {
-                    string text = GameNetworkManager.Instance.NoPunctuation(playerInfo.playerName ?? "");
-                    text = Regex.Replace(text, "[^\\w\\._]", "");
-                    if (text == string.Empty || text.Length == 0)
-                    {
-                        text = $"Player #{playerClientId}";
-                    }
-                    else if (text.Length <= 2)
-                    {
-                        text += "0";
-                    }
-                    else if (text.Length > 32)
-                    {
-                        text = text.Substring(0, 32);
-                    }
+                    string text = ParsePlayerName(playerInfo.playerName, playerClientId);
                     StartOfRound.Instance.allPlayerScripts[playerClientId].playerUsername = text;
                     StartOfRound.Instance.allPlayerScripts[playerClientId].usernameBillboardText.text = text;
                     string text2 = text;
@@ -187,16 +203,13 @@ namespace LobbyImprovements
         {
             if (GameNetworkManager.Instance.disableSteam) return;
 
-            PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo A: " + playerInfo.actualClientId);
             if (StartOfRound.Instance.ClientPlayerList.TryGetValue(playerInfo.actualClientId, out int playerClientId))
             {
-                PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo B: " + playerInfo.actualClientId);
                 // [Steam] Update Profile Icon
                 QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
                 PlayerListSlot playerSlot = quickMenuManager?.playerListSlots[playerClientId];
                 if (playerSlot != null)
                 {
-                    PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo c: " + playerInfo.actualClientId);
                     Color targetColor = profileIconColor != Color.clear ? profileIconColor : Color.clear;
                     if (playerInfo.authResult1 == LIMinimalAuthResult.OK && playerInfo.authResult2 == LIMinimalAuthResult.OK)
                     {
@@ -258,20 +271,18 @@ namespace LobbyImprovements
                 UpdatedPlayerInfo(playerInfo);
             }
         }
+
         internal static void CL_ReceiveAllPlayerInfo(ulong senderId, FastBufferReader messagePayload)
         {
             messagePayload.ReadValueSafe(out string playerInfoStr);
 
             if (GameNetworkManager.Instance.disableSteam)
             {
-                PluginLoader.StaticLogger.LogInfo("CL_ReceiveAllPlayerInfo A: " + PlayerManager.cl_lanPlayers.Count);
                 PlayerManager.cl_lanPlayers = JsonConvert.DeserializeObject<List<CL_LANPlayer>>(playerInfoStr);
-                PluginLoader.StaticLogger.LogInfo("CL_ReceiveAllPlayerInfo B: " + PlayerManager.cl_lanPlayers.Count);
                 foreach (CL_LANPlayer playerInfo in PlayerManager.cl_lanPlayers)
                 {
                     UpdatedPlayerInfo(playerInfo);
                 }
-                PluginLoader.StaticLogger.LogInfo("CL_ReceiveAllPlayerInfo C: " + PlayerManager.cl_lanPlayers.Count);
             }
             else
             {
@@ -283,29 +294,24 @@ namespace LobbyImprovements
             }
         }
 
-        [HarmonyPatch(typeof(StartOfRound), "OnClientConnect")]
-        [HarmonyPostfix]
-        private static void OnClientConnect(StartOfRound __instance, ulong clientId)
+        internal static void SV_RequestAllPlayerInfo(ulong senderId, FastBufferReader messagePayload)
         {
-            if (__instance.IsServer && __instance.ClientPlayerList.ContainsKey(clientId))
+            if (GameNetworkManager.Instance.disableSteam)
             {
-                if (GameNetworkManager.Instance.disableSteam)
-                {
-                    SV_LANPlayer authSession = PlayerManager.sv_lanPlayers.Find(x => x.actualClientId == clientId);
-                    if (authSession != null)
-                        SessionTickets_Hosting.BroadcastPlayerInfoToClients(authSession);
-                }
-                else
-                {
-                    SV_SteamPlayer authSession = PlayerManager.sv_steamPlayers.Find(x => x.actualClientId == clientId);
-                    if (authSession != null)
-                        SessionTickets_Hosting.BroadcastPlayerInfoToClients(authSession);
-                }
-
-                SessionTickets_Hosting.BroadcastAllPlayerInfoToClient(clientId);
+                SV_LANPlayer authSession = PlayerManager.sv_lanPlayers.Find(x => x.actualClientId == senderId);
+                if (authSession != null)
+                    SessionTickets_Hosting.BroadcastPlayerInfoToClients(authSession);
             }
-        }
+            else
+            {
+                SV_SteamPlayer authSession = PlayerManager.sv_steamPlayers.Find(x => x.actualClientId == senderId);
+                if (authSession != null)
+                    SessionTickets_Hosting.BroadcastPlayerInfoToClients(authSession);
+            }
 
+            SessionTickets_Hosting.BroadcastAllPlayerInfoToClient(senderId);
+        }
+        
         [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
         [HarmonyPrefix]
         private static void ConnectClientToPlayerObject(PlayerControllerB __instance)
@@ -313,6 +319,62 @@ namespace LobbyImprovements
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_CL_ReceivePlayerInfo", CL_ReceivePlayerInfo);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_CL_ReceiveAllPlayerInfo", CL_ReceiveAllPlayerInfo);
             PluginLoader.StaticLogger.LogInfo("Registered Named Message Handlers");
+            
+            if (NetworkManager.Singleton.IsHost)
+            {
+                NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_SV_RequestAllPlayerInfo", SV_RequestAllPlayerInfo);
+                
+                if (GameNetworkManager.Instance.disableSteam)
+                {
+                    string playerName = ES3.Load("PlayerName", "LCGeneralSaveData", "PlayerName").Replace(',', '.');
+                    
+                    // Set own name locally
+                    string parsedPlayerName = ParsePlayerName(playerName, (int)__instance.playerClientId);
+                    __instance.playerUsername = parsedPlayerName;
+                    __instance.usernameBillboardText.text = parsedPlayerName;
+                    string text2 = parsedPlayerName;
+                    int numberOfDuplicateNamesInLobby = __instance.GetNumberOfDuplicateNamesInLobby();
+                    if (numberOfDuplicateNamesInLobby > 0)
+                    {
+                        text2 = string.Format("{0}{1}", parsedPlayerName, numberOfDuplicateNamesInLobby);
+                    }
+                    __instance.quickMenuManager.AddUserToPlayerList(0, text2, (int)__instance.playerClientId);
+                    StartOfRound.Instance.mapScreen.radarTargets[(int)__instance.playerClientId].name = text2;
+                    
+                    // Set own data for syncing to other players
+                    if (!PlayerManager.sv_lanPlayers.Any(t => t.actualClientId == __instance.actualClientId))
+                    {
+                        SV_LANPlayer authSession = new SV_LANPlayer()
+                        {
+                            actualClientId = __instance.actualClientId,
+                            playerName = playerName,
+                        };
+                        PlayerManager.sv_lanPlayers.Add(authSession);
+                    }
+                }
+                else
+                {
+                    if (!PlayerManager.sv_steamPlayers.Any(t => t.actualClientId == __instance.actualClientId))
+                    {
+                        SV_SteamPlayer authSession = new SV_SteamPlayer()
+                        {
+                            actualClientId = __instance.actualClientId,
+                            steamId = __instance.playerSteamId,
+                            authResult1 = LIBeginAuthResult.OK,
+                            authResult2 = LIAuthResponse.OK,
+                        };
+                        PlayerManager.sv_steamPlayers.Add(authSession);
+                    }
+                }
+            }
+            else
+            {
+                var writer = new FastBufferWriter(1, Allocator.Temp);
+                using (writer)
+                {
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_SV_RequestAllPlayerInfo", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                }
+            }
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "SetInstanceValuesBackToDefault")]

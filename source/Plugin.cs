@@ -10,7 +10,6 @@ using BepInEx;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
-using DunGen;
 using HarmonyLib;
 using LethalModDataLib.Attributes;
 using LethalModDataLib.Enums;
@@ -495,7 +494,6 @@ namespace LobbyImprovements
             else
             {
                 SV_LANPlayer lanPlayer = new SV_LANPlayer() { actualClientId = request.ClientNetworkId };
-
                 if (response.Approved && __instance.disableSteam)
                 {
                     if (array.Any(x => x.StartsWith("hwid:")))
@@ -542,14 +540,15 @@ namespace LobbyImprovements
 
                 if (__instance.disableSteam)
                 {
-                    if (response.Approved && array.Any(x => x.StartsWith("playername:")))
-                    {
-                        string value = array.First(x => x.StartsWith("playername:")).Substring(11);
-                        lanPlayer.playerName = value;
-                    }
-
                     if (response.Approved)
+                    {
+                        if (array.Any(x => x.StartsWith("playername:")))
+                        {
+                            string value = array.First(x => x.StartsWith("playername:")).Substring(11);
+                            lanPlayer.playerName = value;
+                        }
                         PlayerManager.sv_lanPlayers.Add(lanPlayer);
+                    }
                 }
                 else
                 {
@@ -630,18 +629,6 @@ namespace LobbyImprovements
             if (!Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
                 __instance.WithLower("maxplayers", 5);
-            }
-        }
-
-        public static int debugConnectedPlayers = -1;
-        [HarmonyPatch(typeof(StartOfRound), "Update")]
-        [HarmonyPostfix]
-        private static void SOR_Update(StartOfRound __instance)
-        {
-            if (NetworkManager.Singleton && NetworkManager.Singleton.IsServer && GameNetworkManager.Instance.connectedPlayers != debugConnectedPlayers)
-            {
-                debugConnectedPlayers = GameNetworkManager.Instance.connectedPlayers;
-                PluginLoader.StaticLogger.LogInfo($"[Connected Players] GNM: {debugConnectedPlayers} | SOR: {__instance.connectedPlayersAmount}");
             }
         }
     }

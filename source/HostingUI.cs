@@ -196,7 +196,7 @@ namespace LobbyImprovements
                             secureToggleText.GetComponent<RectTransform>().sizeDelta = new Vector2(175f, 30f);
                             secureToggleText.transform.localPosition = new Vector3(-4f, 0f, 0f);
                             secureToggleText.fontSize = 12f;
-                            secureToggleText.text = GameNetworkManager.Instance.disableSteam ? "Validate Client Tokens:" : "Validate Steam Sessions:";
+                            secureToggleText.text = GameNetworkManager.Instance.disableSteam ? "Validate Clients:" : "Validate Steam Sessions:";
                             Image secureToggleIcon = secureToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
                             Button secureToggleBtn = secureToggleObj.GetComponentInChildren<Button>();
                             secureToggleBtn.onClick = new Button.ButtonClickedEvent();
@@ -369,12 +369,12 @@ namespace LobbyImprovements
             string tmpPassword = hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
             if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
-                if (!string.IsNullOrWhiteSpace(tmpPassword))
+                if (!string.IsNullOrWhiteSpace(tmpPassword) && !GameNetworkManager.Instance.disableSteam)
                 {
                     __instance.tipTextHostSettings.text = "Password Protection is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;
                 }
-                else if (PluginLoader.steamSecureLobby)
+                else if (PluginLoader.steamSecureLobby && !GameNetworkManager.Instance.disableSteam)
                 {
                     __instance.tipTextHostSettings.text = "Validate Steam Sessions is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;

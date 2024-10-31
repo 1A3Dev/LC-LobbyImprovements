@@ -21,6 +21,7 @@ namespace LobbyImprovements.LANDiscovery
         public int MaxMembers;
         public bool IsChallengeMoon;
         public bool IsSecure;
+        public bool IsPasswordProtected;
     }
 
     public class ClientDiscovery : MonoBehaviour

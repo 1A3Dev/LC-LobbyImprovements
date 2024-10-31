@@ -29,6 +29,7 @@ namespace LobbyImprovements.LANDiscovery
                     MaxMembers = PluginLoader.GetMaxPlayers(),
                     IsChallengeMoon = GameNetworkManager.Instance.currentSaveFileName == "LCChallengeFile",
                     IsSecure = PluginLoader.lanSecureLobby,
+                    IsPasswordProtected = !string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword),
                 };
                 LANLobbyManager_InGame.UpdateCurrentLANLobby(currentLobby);
 
