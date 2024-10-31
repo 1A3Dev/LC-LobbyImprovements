@@ -1,4 +1,4 @@
-### 1.0.4
+### 1.0.5
 
 - Fixed the lobby list scrollbar being longer than the results
 - Lobby Hosting Changes
@@ -12,6 +12,10 @@
   - Added a warning when trying to host a lobby where the name contains a word that is blacklisted in vanilla
   - Replaced the public, friends-only & invite-only buttons with a dropdown
 - Added ability to set your player name on LAN
+
+### 1.0.4
+
+- Fixed an issue with lobby codes that caused the 4th player to be unable to join
 
 ### 1.0.3
 
