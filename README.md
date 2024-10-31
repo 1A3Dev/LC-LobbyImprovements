@@ -19,8 +19,8 @@ This mod adds various features relating to lobbies:
     - This is compatible with late joining mods such as LobbyControl
   - Added ability to set your player name
     - Only people who have this mod will be able to see the usernames
-  - Added the ability to ban players in LAN
-    - If you have this enabled then the lobby will only be joinable by people who have this mod
+  - Added the ability to ban players
+    - If you have this enabled (Validate Clients) then the lobby will only be joinable by people who have this mod
 - Lobby Codes/IDs
   - You can copy your current lobby's id via the option on the pause menu
   - You can copy a lobby id from the lobby list using the "Copy ID" button

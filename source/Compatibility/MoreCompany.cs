@@ -5,7 +5,7 @@ namespace LobbyImprovements.Compatibility
     {
         internal static int GetMaxPlayers()
         {
-            return global::MoreCompany.MainClass.actualPlayerCount;
+            return global::MoreCompany.MainClass.newPlayerCount;
         }
     }
 }
