@@ -369,12 +369,13 @@ namespace LobbyImprovements
             string tmpPassword = hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
             if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
-                if (!string.IsNullOrWhiteSpace(tmpPassword) && !GameNetworkManager.Instance.disableSteam)
+                bool hasDefaultTag = string.IsNullOrEmpty(__instance.lobbyTagInputField.text) || __instance.lobbyTagInputField.text == "none";
+                if (!string.IsNullOrWhiteSpace(tmpPassword) && !GameNetworkManager.Instance.disableSteam && hasDefaultTag)
                 {
                     __instance.tipTextHostSettings.text = "Password Protection is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;
                 }
-                else if (PluginLoader.steamSecureLobby && !GameNetworkManager.Instance.disableSteam)
+                else if (PluginLoader.steamSecureLobby && !GameNetworkManager.Instance.disableSteam && hasDefaultTag)
                 {
                     __instance.tipTextHostSettings.text = "Validate Steam Sessions is not currently usable in 'public' lobbies! This will be changed in future.";
                     return false;

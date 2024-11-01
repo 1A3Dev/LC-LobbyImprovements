@@ -358,37 +358,31 @@ namespace LobbyImprovements
                     //LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, lobbySlot.lobbyId.Value.ToString(), ["Copy ID", "Copied", "Invalid"]);
                 }
 
-                // Move the text for challenge moon lobbies
+                List<string> tags = new List<string>();
                 if (lobbySlot.thisLobby.GetData("chal") == "t")
                 {
                     TextMeshProUGUI origChalModeText = lobbySlot.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
                     origChalModeText?.gameObject?.SetActive(false);
 
-                    GameObject chalModeTextObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
-                    chalModeTextObj.name = "ChalText";
-                    TextMeshProUGUI chalModeText = chalModeTextObj?.GetComponent<TextMeshProUGUI>();
-                    chalModeText.transform.localPosition = new Vector3(-25f, -4f, 0f);
-                    chalModeText.transform.localScale = new Vector3(1f, 1f, 1f);
-                    chalModeText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                    chalModeText.color = Color.magenta;
-                    chalModeText.alpha = 0.4f;
-                    chalModeText.text = "CHALLENGE MODE";
+                    tags.Add("<color=purple>CHALLENGE</color>");
                 }
 
+                if (lobbySlot.thisLobby.GetData("password") == "1")
+                    tags.Add("<color=yellow>PASSWORD</color>");
+                
                 if (lobbySlot.thisLobby.GetData("li_secure") == "1")
+                    tags.Add("<color=green>SECURE</color>");
+                
+                GameObject lobbyTagsObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
+                lobbyTagsObj.name = "TagsText";
+                TextMeshProUGUI lobbyTagsText = lobbyTagsObj?.GetComponent<TextMeshProUGUI>();
+                if (lobbyTagsText != null)
                 {
-                    GameObject secureTextObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
-                    secureTextObj.name = "SecureText";
-                    TextMeshProUGUI secureText = secureTextObj?.GetComponent<TextMeshProUGUI>();
-                    if (secureText != null)
-                    {
-                        secureText.transform.localPosition = new Vector3(-25f, -15f, 0f);
-                        secureText.transform.localScale = new Vector3(1f, 1f, 1f);
-                        secureText.horizontalAlignment = HorizontalAlignmentOptions.Right;
-                        secureText.color = Color.green;
-                        secureText.alpha = 0.4f;
-                        secureText.text = "SECURE: \U00002713";
-                    }
+                    lobbyTagsText.transform.localPosition = new Vector3(-25f, -15f, 0f);
+                    lobbyTagsText.transform.localScale = new Vector3(1f, 1f, 1f);
+                    lobbyTagsText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                    lobbyTagsText.alpha = 0.4f;
+                    lobbyTagsText.text = string.Join(", ", tags);
                 }
             }
         }
