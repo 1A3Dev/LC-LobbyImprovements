@@ -109,22 +109,24 @@ namespace LobbyImprovements
 
         public static void SteamUser_OnValidateAuthTicketResponse(SteamId steamId, SteamId steamIdOwner, AuthResponse response)
         {
-            int foundIndex = PlayerManager.sv_steamPlayers.FindIndex(x => x.steamId == steamId);
-            if (foundIndex != -1)
+            if (response != AuthResponse.AuthTicketCanceled)
+                PluginLoader.StaticLogger.LogInfo($"[Steam] OnValidateAuthTicketResponse ({steamId}): {response}");
+
+            string kickPrefix = "<size=12><color=red>Invalid Steam Ticket:<color=white>\n";
+            foreach (var steamPlayer in PlayerManager.sv_steamPlayers)
             {
-                PlayerManager.sv_steamPlayers[foundIndex].authResult2 = (LIAuthResponse)response;
-
-                if (response != AuthResponse.AuthTicketCanceled)
-                    PluginLoader.StaticLogger.LogInfo($"[Steam] OnValidateAuthTicketResponse ({steamId}): {response}");
-
-                if (response != AuthResponse.OK && PluginLoader.steamSecureLobby && NetworkManager.ServerClientId != PlayerManager.sv_steamPlayers[foundIndex].actualClientId)
+                if (steamId == steamPlayer.steamId)
                 {
-                    string kickPrefix = "<size=12><color=red>Invalid Steam Ticket:<color=white>\n";
-                    NetworkManager.Singleton.DisconnectClient(PlayerManager.sv_steamPlayers[foundIndex].actualClientId, $"{kickPrefix}{response}");
-                }
-                else
-                {
-                    BroadcastPlayerInfoToClients(PlayerManager.sv_steamPlayers[foundIndex]);
+                    steamPlayer.authResult2 = (LIAuthResponse)response;
+                    
+                    if (response != AuthResponse.OK && PluginLoader.steamSecureLobby && NetworkManager.ServerClientId != steamPlayer.actualClientId)
+                    {
+                        NetworkManager.Singleton.DisconnectClient(steamPlayer.actualClientId, $"{kickPrefix}{response}");
+                    }
+                    else
+                    {
+                        BroadcastPlayerInfoToClients(steamPlayer);
+                    }
                 }
             }
         }
@@ -180,7 +182,7 @@ namespace LobbyImprovements
         {
             if (!GameNetworkManager.Instance.disableSteam) return;
 
-            if (StartOfRound.Instance.ClientPlayerList.TryGetValue((ulong)playerInfo.actualClientId, out int playerClientId))
+            if (StartOfRound.Instance.ClientPlayerList.TryGetValue(playerInfo.actualClientId, out int playerClientId))
             {
                 // [LAN] Update Username
                 if (playerInfo.playerName != StartOfRound.Instance.allPlayerScripts[playerClientId].playerUsername)
@@ -203,8 +205,11 @@ namespace LobbyImprovements
         {
             if (GameNetworkManager.Instance.disableSteam) return;
 
+            PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo A: " + playerInfo.steamId);
             if (StartOfRound.Instance.ClientPlayerList.TryGetValue(playerInfo.actualClientId, out int playerClientId))
             {
+                PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo B: " + playerClientId);
+                
                 // [Steam] Update Profile Icon
                 QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
                 PlayerListSlot playerSlot = quickMenuManager?.playerListSlots[playerClientId];

@@ -13,6 +13,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using LethalModDataLib.Attributes;
 using LethalModDataLib.Enums;
+using Netcode.Transports.Facepunch;
 using Steamworks;
 using Steamworks.Data;
 using TMPro;
@@ -105,7 +106,7 @@ namespace LobbyImprovements
             recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
-            lobbyNameFilterEnabled.SettingChanged += (sender, args) =>
+            lobbyNameFilterEnabled.SettingChanged += (_, _) =>
             {
                 SteamLobbyManager lobbyManager = Object.FindFirstObjectByType<SteamLobbyManager>();
                 if (lobbyManager != null)
@@ -114,17 +115,17 @@ namespace LobbyImprovements
                 }
             };
             lobbyNameFilterDefaults = StaticConfig.Bind("Lobby Names", "Default Words", true, $"Should Zeekerss' blocked words be filtered? Words: {string.Join(',', LobbyNameFilter.offensiveWords)}");
-            lobbyNameFilterDefaults.SettingChanged += (sender, args) =>
+            lobbyNameFilterDefaults.SettingChanged += (_, _) =>
             {
                 UpdateLobbyNameFilter();
             };
             lobbyNameFilterWhitelist = StaticConfig.Bind("Lobby Names", "Whitelisted Terms", "", "This should be a comma-separated list.");
-            lobbyNameFilterWhitelist.SettingChanged += (sender, args) =>
+            lobbyNameFilterWhitelist.SettingChanged += (_, _) =>
             {
                 UpdateLobbyNameFilter();
             };
             lobbyNameFilterBlacklist = StaticConfig.Bind("Lobby Names", "Blacklisted Terms", "", "This should be a comma-separated list.");
-            lobbyNameFilterBlacklist.SettingChanged += (sender, args) =>
+            lobbyNameFilterBlacklist.SettingChanged += (_, _) =>
             {
                 UpdateLobbyNameFilter();
             };
@@ -435,6 +436,15 @@ namespace LobbyImprovements
                 __instance.HostSetLobbyPublic(__instance.hostSettings_LobbyPublic);
         }
 
+        private static string parseConnectionData(string[] array)
+        {
+            return string.Join(',', array.Select(x => 
+                x.StartsWith("ticket:") ? $"ticket:{x.Substring(7).Length}" :
+                x.StartsWith("hwid:") ? $"hwid:{x.Substring(5).Length}" :
+                x.StartsWith("password:") ? $"password:{x.Substring(9).Length}" : x
+            ));
+        }
+        
         [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
         [HarmonyPostfix]
         private static void SetConnectionDataBeforeConnecting(GameNetworkManager __instance)
@@ -451,17 +461,26 @@ namespace LobbyImprovements
             else
             {
                 SessionTickets_Client.currentTicket = SteamUser.GetAuthSessionTicket();
-                newData.Add($"steamticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
+                newData.Add($"ticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
             }
 
             if (!string.IsNullOrWhiteSpace(HostingUI.protectedLobbyPassword))
                 newData.Add($"password:{HostingUI.protectedLobbyPassword}");
             else
-                newData.Add($"password:");
+                newData.Add("password:");
 
-            string newString = string.Join(',', newData);
-            //PluginLoader.StaticLogger.LogInfo(newString);
-            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(newString);
+            PluginLoader.StaticLogger.LogInfo("SetConnectionDataBeforeConnecting: " + parseConnectionData(newData.ToArray()));
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(string.Join(',', newData));
+        }
+
+        // [Host] Replace the steam ticket and specified password with the string length instead of value
+        [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
+        [HarmonyPrefix]
+        private static void ConnectionApproval_Prefix(ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
+        {
+            string @string = Encoding.ASCII.GetString(request.Payload);
+            string[] array = @string.Split(",");
+            Debug.Log("Connection approval callback! Game version of client request: " + parseConnectionData(array));
         }
 
         // [Host] Added kick reasons
@@ -470,7 +489,7 @@ namespace LobbyImprovements
         public static Dictionary<ulong, string> steamBanReasons = new Dictionary<ulong, string>();
         [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
         [HarmonyPostfix]
-        private static void Postfix(GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
+        private static void ConnectionApproval_Postfix(GameNetworkManager __instance, ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)
         {
             if (request.ClientNetworkId == NetworkManager.Singleton.LocalClientId)
                 return;
@@ -550,14 +569,14 @@ namespace LobbyImprovements
                     {
                         // Session Tickets
                         ulong steamId = (ulong)Convert.ToInt64(array[1]);
-                        if (array.Any(x => x.StartsWith("steamticket:")))
+                        if (array.Any(x => x.StartsWith("ticket:")))
                         {
                             response.Pending = true;
                             BeginAuthResult authResponse = BeginAuthResult.InvalidTicket;
                             try
                             {
-                                string value = array.First(x => x.StartsWith("steamticket:"));
-                                string[] stringArray = value.Substring(12).Split(';');
+                                string value = array.First(x => x.StartsWith("ticket:"));
+                                string[] stringArray = value.Substring(7).Split(';');
                                 byte[] ticketData = Array.ConvertAll(stringArray, byte.Parse);
                                 authResponse = SteamUser.BeginAuthSession(ticketData, steamId);
                             }
@@ -569,7 +588,7 @@ namespace LobbyImprovements
                             if (authResponse != BeginAuthResult.OK && PluginLoader.steamSecureLobby)
                             {
                                 string kickPrefix = "<size=12><color=red>Invalid Steam Ticket:<color=white>\n";
-                                response.Reason = $"{kickPrefix}{response}";
+                                response.Reason = $"{kickPrefix}{authResponse}";
                                 response.Approved = false;
                             }
                             else
