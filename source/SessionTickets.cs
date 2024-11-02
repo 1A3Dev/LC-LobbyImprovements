@@ -205,11 +205,8 @@ namespace LobbyImprovements
         {
             if (GameNetworkManager.Instance.disableSteam) return;
 
-            PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo A: " + playerInfo.steamId);
             if (StartOfRound.Instance.ClientPlayerList.TryGetValue(playerInfo.actualClientId, out int playerClientId))
             {
-                PluginLoader.StaticLogger.LogInfo("UpdatedPlayerInfo B: " + playerClientId);
-                
                 // [Steam] Update Profile Icon
                 QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
                 PlayerListSlot playerSlot = quickMenuManager?.playerListSlots[playerClientId];
@@ -391,6 +388,24 @@ namespace LobbyImprovements
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceivePlayerInfo");
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceiveAllPlayerInfo");
                 PluginLoader.StaticLogger.LogInfo("Unregistered Named Message Handlers");
+            }
+        }
+        
+        [HarmonyPatch(typeof(QuickMenuManager), "AddUserToPlayerList")]
+        [HarmonyPostfix]
+        public static void AddUserToPlayerList(ulong steamId, int playerObjectId)
+        {
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                CL_LANPlayer playerInfo = PlayerManager.cl_lanPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId);
+                if (playerInfo != null)
+                    UpdatedPlayerInfo(playerInfo);
+            }
+            else
+            {
+                CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.steamId == steamId && x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId);
+                if (playerInfo != null)
+                    UpdatedPlayerInfo(playerInfo);
             }
         }
 
