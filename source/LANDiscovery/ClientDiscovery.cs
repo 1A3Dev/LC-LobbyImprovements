@@ -93,7 +93,8 @@ namespace LobbyImprovements.LANDiscovery
             }
             catch (Exception ex)
             {
-                PluginLoader.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
+                if (ex.Message != "A blocking operation was interrupted by a call to WSACancelBlockingCall.")
+                    PluginLoader.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
             }
         }
 
