@@ -360,8 +360,6 @@ namespace LobbyImprovements
                         {
                             actualClientId = __instance.actualClientId,
                             steamId = __instance.playerSteamId,
-                            authResult1 = LIBeginAuthResult.OK,
-                            authResult2 = LIAuthResponse.OK,
                         };
                         PlayerManager.sv_steamPlayers.Add(authSession);
                     }
