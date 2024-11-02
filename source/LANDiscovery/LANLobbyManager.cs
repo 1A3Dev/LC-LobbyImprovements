@@ -665,7 +665,6 @@ namespace LobbyImprovements.LANDiscovery
         private static void QMM_UpdateHeader(QuickMenuManager __instance, int playerObjectId)
         {
             UpdatePlayerListHeader(__instance);
-            //SessionTickets_Hosting.UpdateProfileIconColour(__instance.playerListSlots[playerObjectId]);
         }
 
         [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
@@ -673,10 +672,8 @@ namespace LobbyImprovements.LANDiscovery
         private static void QMM_OpenQuickMenu(QuickMenuManager __instance)
         {
             UpdatePlayerListHeader(__instance);
-            //foreach (PlayerListSlot playerSlot in __instance.playerListSlots)
-            //{
-            //    SessionTickets_Hosting.UpdateProfileIconColour(playerSlot);
-            //}
+            if (!GameNetworkManager.Instance.disableSteam)
+                GameObject.Find("CopyCurrentLobbyCode")?.SetActive(GameNetworkManager.Instance.currentLobby.HasValue);
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "InviteFriendsUI")]
