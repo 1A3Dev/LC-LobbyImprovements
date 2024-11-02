@@ -601,7 +601,7 @@ namespace LobbyImprovements
                     {
                         // Session Tickets
                         ulong steamId = (ulong)Convert.ToInt64(array[1]);
-                        if (array.Any(x => x.StartsWith("ticket:")))
+                        if (array.Any(x => x.StartsWith("ticket:")) && PluginLoader.steamSecureLobby) //TODO: steamSecureLobby here blocks checking if the option is disabled, this is to allow testing it first
                         {
                             response.Pending = true;
                             BeginAuthResult authResponse = BeginAuthResult.InvalidTicket;
@@ -641,9 +641,9 @@ namespace LobbyImprovements
                         }
                         else
                         {
-                            PluginLoader.StaticLogger.LogInfo($"[Steam] ConnectionApproval ({steamId}): MissingTicket");
                             if (PluginLoader.steamSecureLobby)
                             {
+                                PluginLoader.StaticLogger.LogInfo($"[Steam] ConnectionApproval ({steamId}): MissingTicket");
                                 string kickPrefix = "<size=12><color=red>Missing Steam Ticket:<color=white>\n";
                                 response.Reason = $"{kickPrefix}This lobby requires you to have the LobbyImprovements mod.";
                                 response.Approved = false;
