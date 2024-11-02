@@ -403,7 +403,7 @@ namespace LobbyImprovements
             }
             else
             {
-                CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.steamId == steamId && x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId);
+                CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId && x.steamId == steamId);
                 if (playerInfo != null)
                     UpdatedPlayerInfo(playerInfo);
             }
