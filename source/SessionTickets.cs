@@ -196,7 +196,10 @@ namespace LobbyImprovements
                     {
                         text2 = string.Format("{0}{1}", text, numberOfDuplicateNamesInLobby);
                     }
-                    StartOfRound.Instance.allPlayerScripts[playerClientId].quickMenuManager.AddUserToPlayerList(0, text2, playerClientId);
+
+                    QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
+                    if (quickMenuManager)
+                        quickMenuManager.playerListSlots[playerClientId].usernameHeader.text = text2;
                     StartOfRound.Instance.mapScreen.radarTargets[playerClientId].name = text2;
                 }
             }
@@ -316,16 +319,24 @@ namespace LobbyImprovements
         
         [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
         [HarmonyPrefix]
-        private static void ConnectClientToPlayerObject(PlayerControllerB __instance)
+        private static void ConnectClientToPlayerObject_Prefix(PlayerControllerB __instance)
         {
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_CL_ReceivePlayerInfo", CL_ReceivePlayerInfo);
             NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_CL_ReceiveAllPlayerInfo", CL_ReceiveAllPlayerInfo);
-            PluginLoader.StaticLogger.LogInfo("Registered Named Message Handlers");
-            
             if (NetworkManager.Singleton.IsHost)
             {
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_SV_RequestAllPlayerInfo", SV_RequestAllPlayerInfo);
-                
+            }
+            PluginLoader.StaticLogger.LogInfo("Registered Named Message Handlers");
+        }
+        
+        
+        [HarmonyPatch(typeof(PlayerControllerB), "ConnectClientToPlayerObject")]
+        [HarmonyPostfix]
+        private static void ConnectClientToPlayerObject_Postfix(PlayerControllerB __instance)
+        {
+            if (NetworkManager.Singleton.IsHost)
+            {
                 if (GameNetworkManager.Instance.disableSteam)
                 {
                     // Set own name locally
@@ -383,6 +394,7 @@ namespace LobbyImprovements
             {
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceivePlayerInfo");
                 NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_CL_ReceiveAllPlayerInfo");
+                NetworkManager.Singleton.CustomMessagingManager.UnregisterNamedMessageHandler("LI_SV_RequestAllPlayerInfo");
                 PluginLoader.StaticLogger.LogInfo("Unregistered Named Message Handlers");
             }
         }
@@ -393,15 +405,21 @@ namespace LobbyImprovements
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
+                PluginLoader.StaticLogger.LogInfo("Adding user to player list: " + playerObjectId);
                 CL_LANPlayer playerInfo = PlayerManager.cl_lanPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId);
                 if (playerInfo != null)
+                {
+                    PluginLoader.StaticLogger.LogInfo("Adding user to player list (UpdatedPlayerInfo): " + playerObjectId);
                     UpdatedPlayerInfo(playerInfo);
+                }
             }
             else
             {
                 CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId && x.steamId == steamId);
                 if (playerInfo != null)
+                {
                     UpdatedPlayerInfo(playerInfo);
+                }
             }
         }
 
