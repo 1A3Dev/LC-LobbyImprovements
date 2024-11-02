@@ -13,6 +13,8 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using BepInEx.Bootstrap;
 using System;
+using LethalModDataLib.Features;
+using LethalModDataLib.Helpers;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -67,10 +69,11 @@ namespace LobbyImprovements.LANDiscovery
                     lanPlayerNameField.onEndEdit = new TMP_InputField.SubmitEvent();
                     lanPlayerNameField.onEndEdit.AddListener(s =>
                     {
-                        ES3.Save("PlayerName", s, "LCGeneralSaveData");
+                        PluginLoader.lanPlayerName = s;
+                        SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.lanPlayerName)));
                     });
                 }
-                lanPlayerNameField.text = ES3.Load("PlayerName", "LCGeneralSaveData", "PlayerName");
+                lanPlayerNameField.text = PluginLoader.lanPlayerName;
 
                 LoadServerList_LAN(__instance);
                 return false;

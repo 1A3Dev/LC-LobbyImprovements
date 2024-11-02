@@ -49,6 +49,9 @@ namespace LobbyImprovements
         public static ConfigEntry<int> lanDiscoveryPort;
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+        public static string lanPlayerName { get; set; } = "PlayerName";
+        
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool steamSecureLobby { get; set; } = false;
 
         //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
@@ -455,8 +458,7 @@ namespace LobbyImprovements
             if (__instance.disableSteam)
             {
                 newData.Add($"hwid:{SystemInfo.deviceUniqueIdentifier}");
-                string playerName = ES3.Load("PlayerName", "LCGeneralSaveData", "PlayerName").Replace(',', '.');
-                newData.Add($"playername:{playerName}");
+                newData.Add($"playername:{PluginLoader.lanPlayerName.Replace(',', '.')}");
             }
             else
             {
@@ -465,15 +467,46 @@ namespace LobbyImprovements
             }
 
             if (!string.IsNullOrWhiteSpace(HostingUI.protectedLobbyPassword))
+            {
                 newData.Add($"password:{HostingUI.protectedLobbyPassword}");
+                HostingUI.protectedLobbyPassword = null;
+            }
             else
+            {
                 newData.Add("password:");
+            }
+
 
             PluginLoader.StaticLogger.LogInfo("SetConnectionDataBeforeConnecting: " + parseConnectionData(newData.ToArray()));
             NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(string.Join(',', newData));
         }
 
-        // [Host] Replace the steam ticket and specified password with the string length instead of value
+        // [Host] Remove the vanilla "Connection approval callback! Game version of client request:" debug log
+        [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> ConnectionApproval_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var newInstructions = new List<CodeInstruction>();
+            bool alreadyReplaced = false;
+            foreach (var instruction in instructions)
+            {
+                if (!alreadyReplaced)
+                {
+                    if (instruction.opcode == OpCodes.Ldstr && instruction.operand?.ToString() == "Joining client id: {0}; Local/host client id: {1}")
+                    {
+                        alreadyReplaced = true;
+                    }
+                }
+                
+                if (alreadyReplaced)
+                    newInstructions.Add(instruction);
+            }
+
+            if (!alreadyReplaced) PluginLoader.StaticLogger.LogWarning("ConnectionApproval failed to replace log");
+
+            return alreadyReplaced ? newInstructions.AsEnumerable() : instructions;
+        }
+        // [Host] Send the "Connection approval callback! Game version of client request:" debug log but with certain data redacted
         [HarmonyPatch(typeof(GameNetworkManager), "ConnectionApproval")]
         [HarmonyPrefix]
         private static void ConnectionApproval_Prefix(ref NetworkManager.ConnectionApprovalRequest request, ref NetworkManager.ConnectionApprovalResponse response)

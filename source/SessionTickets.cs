@@ -328,10 +328,8 @@ namespace LobbyImprovements
                 
                 if (GameNetworkManager.Instance.disableSteam)
                 {
-                    string playerName = ES3.Load("PlayerName", "LCGeneralSaveData", "PlayerName").Replace(',', '.');
-                    
                     // Set own name locally
-                    string parsedPlayerName = ParsePlayerName(playerName, (int)__instance.playerClientId);
+                    string parsedPlayerName = ParsePlayerName(PluginLoader.lanPlayerName, (int)__instance.playerClientId);
                     __instance.playerUsername = parsedPlayerName;
                     __instance.usernameBillboardText.text = parsedPlayerName;
                     string text2 = parsedPlayerName;
@@ -349,7 +347,7 @@ namespace LobbyImprovements
                         SV_LANPlayer authSession = new SV_LANPlayer()
                         {
                             actualClientId = __instance.actualClientId,
-                            playerName = playerName,
+                            playerName = PluginLoader.lanPlayerName,
                         };
                         PlayerManager.sv_lanPlayers.Add(authSession);
                     }
