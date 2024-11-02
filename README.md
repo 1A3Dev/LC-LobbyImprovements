@@ -5,6 +5,8 @@
 [![Discord](https://img.shields.io/discord/646323142737788928?style=for-the-badge&logo=discord&logoColor=white&label=Discord)](https://discord.gg/CKqVFPRtKp)
 [![Ko-fi](https://img.shields.io/badge/Donate-F16061.svg?style=for-the-badge&logo=ko-fi&logoColor=white&label=Ko-fi)](https://ko-fi.com/K3K8SOM8U)
 
+> If you are using MoreCompany alongside this mod please ensure you are using MoreCompany v1.11.0 or newer!
+
 ### Information
 
 This mod adds various features relating to lobbies:
