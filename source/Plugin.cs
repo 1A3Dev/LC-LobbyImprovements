@@ -455,17 +455,6 @@ namespace LobbyImprovements
             string origString = Encoding.ASCII.GetString(NetworkManager.Singleton.NetworkConfig.ConnectionData);
             List<string> newData = [origString];
 
-            if (__instance.disableSteam)
-            {
-                newData.Add($"hwid:{SystemInfo.deviceUniqueIdentifier}");
-                newData.Add($"playername:{PluginLoader.lanPlayerName.Replace(',', '.')}");
-            }
-            else
-            {
-                SessionTickets_Client.currentTicket = SteamUser.GetAuthSessionTicket();
-                newData.Add($"ticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
-            }
-
             if (!string.IsNullOrWhiteSpace(HostingUI.protectedLobbyPassword))
             {
                 newData.Add($"password:{HostingUI.protectedLobbyPassword}");
@@ -476,6 +465,16 @@ namespace LobbyImprovements
                 newData.Add("password:");
             }
 
+            if (__instance.disableSteam)
+            {
+                newData.Add($"playername:{PluginLoader.lanPlayerName.Replace(',', '.')}");
+                newData.Add($"hwid:{SystemInfo.deviceUniqueIdentifier}");
+            }
+            else
+            {
+                SessionTickets_Client.currentTicket = SteamUser.GetAuthSessionTicket();
+                newData.Add($"ticket:{string.Join(';', SessionTickets_Client.currentTicket.Data)}");
+            }
 
             PluginLoader.StaticLogger.LogInfo("SetConnectionDataBeforeConnecting: " + parseConnectionData(newData.ToArray()));
             NetworkManager.Singleton.NetworkConfig.ConnectionData = Encoding.ASCII.GetBytes(string.Join(',', newData));
