@@ -11,6 +11,10 @@ using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
+using BepInEx.Bootstrap;
+using System;
+using LethalModDataLib.Features;
+using LethalModDataLib.Helpers;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -50,27 +54,40 @@ namespace LobbyImprovements.LANDiscovery
             if (GameNetworkManager.Instance.disableSteam)
             {
                 GameObject.Find("LobbyList/ListPanel/SortPlayerCountButton")?.SetActive(false);
-                TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-                if (sortDropdown != null && sortDropdown.options[0].text != "ASC: Name")
+                GameObject.Find("LobbyList/ListPanel/Dropdown")?.SetActive(false);
+
+                TMP_InputField lanPlayerNameField = __instance.serverTagInputField.transform.parent.Find("PlayerNameInputField")?.gameObject.GetComponent<TMP_InputField>();
+                if (lanPlayerNameField == null)
                 {
-                    sortDropdown.ClearOptions();
-                    sortDropdown.AddOptions(new List<TMP_Dropdown.OptionData>()
+                    GameObject lanPlayerNameObj = GameObject.Instantiate(__instance.serverTagInputField.gameObject, __instance.serverTagInputField.transform.parent);
+                    lanPlayerNameObj.name = "PlayerNameInputField";
+                    lanPlayerNameObj.transform.localPosition = new Vector3(225f, lanPlayerNameObj.transform.localPosition.y, lanPlayerNameObj.transform.localPosition.z);
+                    lanPlayerNameField = lanPlayerNameObj.GetComponent<TMP_InputField>();
+                    lanPlayerNameField.characterLimit = 32;
+                    lanPlayerNameField.characterValidation = TMP_InputField.CharacterValidation.Alphanumeric;
+                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Nameless";
+                    lanPlayerNameField.onEndEdit = new TMP_InputField.SubmitEvent();
+                    lanPlayerNameField.onEndEdit.AddListener(s =>
                     {
-                        new("ASC: Name"),
-                        new("DESC: Name"),
-                        new("ASC: Players"),
-                        new("DESC: Players"),
+                        PluginLoader.lanPlayerName = s;
+                        SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.lanPlayerName)));
                     });
-                    __instance.sortByDistanceSetting = sortDropdown.value;
                 }
+                lanPlayerNameField.text = PluginLoader.lanPlayerName;
+
                 LoadServerList_LAN(__instance);
                 return false;
             }
+            //else if (!Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            //{
+            //    General_Patches.LoadServerList_Steam(__instance);
+            //    return false;
+            //}
 
             return true;
         }
 
-        private static async void LoadServerList_LAN(SteamLobbyManager __instance)
+        public static async void LoadServerList_LAN(SteamLobbyManager __instance)
         {
             if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
 
@@ -85,6 +102,7 @@ namespace LobbyImprovements.LANDiscovery
 
             __instance.refreshServerListTimer = 0f;
             __instance.serverListBlankText.text = "Loading server list...";
+            __instance.serverListBlankText.gameObject.SetActive(true);
             currentLobbyList = null;
             LANLobbySlot[] array = Object.FindObjectsByType<LANLobbySlot>(FindObjectsSortMode.InstanceID);
             for (int i = 0; i < array.Length; i++)
@@ -95,49 +113,41 @@ namespace LobbyImprovements.LANDiscovery
             clientDiscovery.listenPort = PluginLoader.lanDiscoveryPort.Value;
             LANLobby[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
             currentLobbyList = lobbiesArr;
-            GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
-            if (currentLobbyList != null)
+            if (currentLobbyList != null && currentLobbyList.Length != 0)
             {
-                if (currentLobbyList.Length == 0)
-                {
-                    __instance.serverListBlankText.text = "No available servers to join.";
-                }
-                else
-                {
-                    __instance.serverListBlankText.text = "";
-                }
+                __instance.serverListBlankText.text = "";
                 __instance.lobbySlotPositionOffset = 0f;
                 __instance.loadLobbyListCoroutine = GameNetworkManager.Instance.StartCoroutine(loadLobbyListAndFilter(currentLobbyList, __instance));
             }
             else
             {
-                PluginLoader.StaticLogger.LogInfo("Lobby list is null after request.");
                 __instance.serverListBlankText.text = "No available servers to join.";
+                GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
             }
         }
         private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance)
         {
+            __instance.serverListBlankText.gameObject.SetActive(false);
+
             bool anyResults = false;
 
-            TMP_Dropdown sortDropdown = GameObject.Find("LobbyList/ListPanel/Dropdown")?.GetComponent<TMP_Dropdown>();
-            if (sortDropdown != null)
-            {
-                switch (__instance.sortByDistanceSetting)
+            Array.Sort(lobbyList, (x, y) => {
+                if (x.MemberCount == y.MemberCount)
                 {
-                    case 0: // ASC: Name
-                        lobbyList = lobbyList.OrderBy(x => x.LobbyName).ToArray();
-                        break;
-                    case 1: // DESC: Name
-                        lobbyList = lobbyList.OrderByDescending(x => x.LobbyName).ToArray();
-                        break;
-                    case 2: // ASC: Players
-                        lobbyList = lobbyList.OrderBy(x => x.MemberCount).ToArray();
-                        break;
-                    case 3: // DESC: Players
-                        lobbyList = lobbyList.OrderByDescending(x => x.MemberCount).ToArray();
-                        break;
+                    if (x.MaxMembers == y.MaxMembers)
+                    {
+                        return x.LobbyName.CompareTo(y.LobbyName);
+                    }
+                    else
+                    {
+                        return y.MaxMembers - x.MaxMembers;
+                    }
                 }
-            }
+                else
+                {
+                    return y.MemberCount - x.MemberCount;
+                }
+            });
 
             for (int i = 0; i < lobbyList.Length; i++)
             {
@@ -176,18 +186,39 @@ namespace LobbyImprovements.LANDiscovery
                 LANLobbySlot componentInChildren = originalSlot.gameObject.AddComponent<LANLobbySlot>();
                 Object.Destroy(originalSlot);
 
+                List<string> tags = new List<string>();
+                
                 if (lobbyList[i].IsChallengeMoon)
                 {
                     componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName (1)")?.GetComponent<TextMeshProUGUI>();
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers (2)")?.GetComponent<TextMeshProUGUI>();
-                    TextMeshProUGUI chalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
-                    if (chalModeText != null)
-                        chalModeText.transform.localPosition = new Vector3(120f, -11f, -7f);
+                    TextMeshProUGUI origChalModeText = componentInChildren.transform.Find("NumPlayers (1)")?.GetComponent<TextMeshProUGUI>();
+                    origChalModeText?.gameObject?.SetActive(false);
+
+                    tags.Add("<color=purple>CHALLENGE</color>");
                 }
                 else
                 {
                     componentInChildren.LobbyName = componentInChildren.transform.Find("ServerName")?.GetComponent<TextMeshProUGUI>();
                     componentInChildren.playerCount = componentInChildren.transform.Find("NumPlayers")?.GetComponent<TextMeshProUGUI>();
+                }
+
+                if (lobbyList[i].IsPasswordProtected)
+                    tags.Add("<color=yellow>PASSWORD</color>");
+                
+                if (lobbyList[i].IsSecure)
+                    tags.Add("<color=green>SECURE</color>");
+                
+                GameObject lobbyTagsObj = GameObject.Instantiate(componentInChildren.playerCount.gameObject, componentInChildren.transform);
+                lobbyTagsObj.name = "TagsText";
+                TextMeshProUGUI lobbyTagsText = lobbyTagsObj?.GetComponent<TextMeshProUGUI>();
+                if (lobbyTagsText != null)
+                {
+                    lobbyTagsText.transform.localPosition = new Vector3(-25f, -15f, 0f);
+                    lobbyTagsText.transform.localScale = new Vector3(1f, 1f, 1f);
+                    lobbyTagsText.horizontalAlignment = HorizontalAlignmentOptions.Right;
+                    lobbyTagsText.alpha = 0.4f;
+                    lobbyTagsText.text = string.Join(", ", tags);
                 }
 
                 if (componentInChildren.LobbyName)
@@ -207,9 +238,11 @@ namespace LobbyImprovements.LANDiscovery
                 Button JoinButton = componentInChildren.transform.Find("JoinButton")?.GetComponent<Button>();
                 if (JoinButton && !componentInChildren.transform.Find("CopyCodeButton"))
                 {
+                    JoinButton.transform.localPosition = new Vector3(405f, -8.5f, -4.1f);
+                    JoinButton.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
                     JoinButton.onClick = new Button.ButtonClickedEvent();
                     JoinButton.onClick.AddListener(componentInChildren.JoinButton);
-                    LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}", ["Copy IP", "Copied", "Invalid"]);
+                    //LobbyCodes.AddButtonToCopyLobbyCode(JoinButton, $"{lobbyList[i].IPAddress}:{lobbyList[i].Port}", ["Copy IP", "Copied", "Invalid"]);
                 }
 
                 componentInChildren.thisLobby = lobbyList[i];
@@ -219,6 +252,9 @@ namespace LobbyImprovements.LANDiscovery
 
             if (!anyResults)
                 __instance.serverListBlankText.text = "No available servers to join.";
+
+            __instance.serverListBlankText.gameObject.SetActive(__instance.serverListBlankText.text != string.Empty);
+            GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
         }
     }
 
@@ -236,7 +272,6 @@ namespace LobbyImprovements.LANDiscovery
             else
                 __instance.privatePublicDescription.text = "PUBLIC means your game will be visible on the lobby list by anyone on your network.";
             __instance.lanSetAllowRemoteButtonAnimator?.SetBool("isPressed", !PluginLoader.setInviteOnly);
-            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
         }
 
         [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
@@ -246,7 +281,6 @@ namespace LobbyImprovements.LANDiscovery
             __instance.hostSettings_LobbyPublic = false;
             __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
             __instance.privatePublicDescription.text = "LOCALHOST means your game will only be joinable from your local machine.";
-            PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", false);
         }
 
         [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
@@ -262,7 +296,6 @@ namespace LobbyImprovements.LANDiscovery
             }
             else
             {
-                PluginLoader.setInviteOnlyButtonAnimator?.SetBool("isPressed", PluginLoader.setInviteOnly);
                 if (!setPublic)
                 {
                     __instance.setPrivateButtonAnimator.SetBool("isPressed", !PluginLoader.setInviteOnly);
@@ -272,7 +305,6 @@ namespace LobbyImprovements.LANDiscovery
                         __instance.privatePublicDescription.text = "FRIENDS ONLY means only friends or invited people can join.";
                 }
             }
-            __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly);
         }
 
         // Make the challenge leaderboard show your own stat whilst on LAN
@@ -280,6 +312,8 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPostfix]
         private static void EnableLeaderboardDisplay(MenuManager __instance, bool enable)
         {
+            HostingUI.hostPanel?.gameObject?.SetActive(!enable);
+
             if (enable && !__instance.requestingLeaderboard && GameNetworkManager.Instance.disableSteam)
             {
                 __instance.requestingLeaderboard = true;
@@ -368,13 +402,9 @@ namespace LobbyImprovements.LANDiscovery
             }
             currentLobby = foundLobby;
             if (foundLobby != null)
-            {
                 GameNetworkManager.Instance.steamLobbyName = currentLobby.LobbyName;
-            }
             else
-            {
                 GameNetworkManager.Instance.steamLobbyName = "";
-            }
             waitingForLobbyDataRefresh = false;
 
             if (startAClient)
@@ -416,7 +446,8 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.disableSteam)
             {
-                foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts) // Fix for billboards showing as Player # with no number in LAN (base game issue)
+                // Fix for billboards showing as Player # with no number in LAN (base game issue)
+                foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts)
                 {
                     newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
                 }
@@ -486,6 +517,12 @@ namespace LobbyImprovements.LANDiscovery
                         BanButton.onClick = new Button.ButtonClickedEvent();
                         BanButton.onClick.AddListener(() =>
                         {
+                            ulong clientId = 0;
+                            if (!GameNetworkManager.Instance.disableSteam)
+                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                            else
+                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].actualClientId;
+
                             string reasonSafe = SafeRichText(kickReasonInput?.text);
                             string fullBanReason = General_Patches.banPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
                             General_Patches.kickReason = fullBanReason;
@@ -493,17 +530,23 @@ namespace LobbyImprovements.LANDiscovery
                             General_Patches.kickReason = null;
                             if (kickReasonInput)
                                 kickReasonInput.text = "";
+
                             if (!GameNetworkManager.Instance.disableSteam)
                             {
-                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
+                                if (!StartOfRound.Instance.KickedClientIds.Contains(clientId))
+                                    StartOfRound.Instance.KickedClientIds.Add(clientId);
 
-                                if (!StartOfRound.Instance.KickedClientIds.Contains(playerSteamId))
+                                General_Patches.steamBanReasons.Remove(clientId);
+                                General_Patches.steamBanReasons.Add(clientId, fullBanReason);
+                            }
+                            else
+                            {
+                                int lanPlayerIndex = PlayerManager.sv_lanPlayers.FindIndex(x => x.actualClientId == clientId);
+                                if (lanPlayerIndex != -1)
                                 {
-                                    StartOfRound.Instance.KickedClientIds.Add(playerSteamId);
+                                    PlayerManager.sv_lanPlayers[lanPlayerIndex].banned = true;
+                                    PlayerManager.sv_lanPlayers[lanPlayerIndex].banReason = fullBanReason;
                                 }
-
-                                General_Patches.playerBanReason.Remove(playerSteamId);
-                                General_Patches.playerBanReason.Add(playerSteamId, fullBanReason);
                             }
                         });
                     }
@@ -519,16 +562,18 @@ namespace LobbyImprovements.LANDiscovery
                         KickButton.onClick = new Button.ButtonClickedEvent();
                         KickButton.onClick.AddListener(() =>
                         {
+                            ulong steamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
                             string reasonSafe = SafeRichText(kickReasonInput?.text);
                             General_Patches.kickReason = General_Patches.kickPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
                             __instance.ConfirmKickUserFromServer();
                             General_Patches.kickReason = null;
                             if (kickReasonInput)
                                 kickReasonInput.text = "";
+
                             if (!GameNetworkManager.Instance.disableSteam)
                             {
-                                ulong playerSteamId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
-                                StartOfRound.Instance.KickedClientIds.Remove(playerSteamId);
+                                StartOfRound.Instance.KickedClientIds.Remove(steamId);
+                                General_Patches.steamBanReasons.Remove(steamId);
                             }
                         });
                     }
@@ -603,7 +648,7 @@ namespace LobbyImprovements.LANDiscovery
             if (CrewHeaderText != null)
             {
                 CrewHeaderText.fontSize = 16f;
-                if (!string.IsNullOrEmpty(GameNetworkManager.Instance.steamLobbyName))
+                if (!string.IsNullOrWhiteSpace(GameNetworkManager.Instance.steamLobbyName))
                 {
                     CrewHeaderText.text = $"{GameNetworkManager.Instance.steamLobbyName}\nPlayers: {(StartOfRound.Instance?.connectedPlayersAmount ?? 0) + 1}/{StartOfRound.Instance?.allPlayerScripts.Length ?? 4}";
                 }
@@ -620,7 +665,6 @@ namespace LobbyImprovements.LANDiscovery
         private static void QMM_UpdateHeader(QuickMenuManager __instance, int playerObjectId)
         {
             UpdatePlayerListHeader(__instance);
-            //SessionTickets_Hosting.UpdateProfileIconColour(__instance.playerListSlots[playerObjectId]);
         }
 
         [HarmonyPatch(typeof(QuickMenuManager), "OpenQuickMenu")]
@@ -628,10 +672,8 @@ namespace LobbyImprovements.LANDiscovery
         private static void QMM_OpenQuickMenu(QuickMenuManager __instance)
         {
             UpdatePlayerListHeader(__instance);
-            //foreach (PlayerListSlot playerSlot in __instance.playerListSlots)
-            //{
-            //    SessionTickets_Hosting.UpdateProfileIconColour(playerSlot);
-            //}
+            if (!GameNetworkManager.Instance.disableSteam)
+                GameObject.Find("CopyCurrentLobbyCode")?.SetActive(GameNetworkManager.Instance.currentLobby.HasValue);
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "InviteFriendsUI")]

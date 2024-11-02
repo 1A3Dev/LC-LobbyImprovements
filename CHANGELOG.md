@@ -1,3 +1,19 @@
+### 1.0.5
+
+- Fixed the lobby list scrollbar being longer than the results
+- Lobby Hosting UI Changes
+  - Added an option to specify a server password
+    - If you have a password set then the lobby will only be joinable by people who have this mod
+  - Added an option for online mode to "Validate Steam Sessions"
+    - If you have this enabled then the lobby will only be joinable by people who have this mod
+    - This validates [steam session tickets](https://partner.steamgames.com/doc/features/auth) to prevent people from spoofing their steam id when joining the lobby
+  - Added an option for lan mode to "Validate Clients"
+    - If you have this enabled then the lobby will only be joinable by people who have this mod
+    - This is only currently used to enable bans on lan lobbies
+  - Added a warning when trying to host a lobby where the name contains a word that is blacklisted in vanilla
+  - Replaced the public, friends-only & invite-only buttons with a dropdown
+- Added ability to set your player name on LAN
+
 ### 1.0.4
 
 - Fixed an issue with lobby codes that caused the 4th player to be unable to join

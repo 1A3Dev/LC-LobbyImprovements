@@ -27,6 +27,7 @@
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="UnityEngine.Modules" Version="2023.2.4" IncludeAssets="compile" />
         <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.*" PrivateAssets="all" />
+        <PackageReference Include="MaxWasUnavailable.LethalModDataLib" Version="1.*" PrivateAssets="all" />
     </ItemGroup>
 
     <ItemGroup Condition="$(CI) != 'true'">
@@ -39,8 +40,11 @@
         <Reference Include="Facepunch Transport for Netcode for GameObjects">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch Transport for Netcode for GameObjects.dll</HintPath>
         </Reference>
-        <Reference Include="Facepunch.Steamworks.Win64">
+        <Reference Include="Facepunch.Steamworks.Win64" Publicize="true">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Facepunch.Steamworks.Win64.dll</HintPath>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+            <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Newtonsoft.Json.dll</HintPath>
         </Reference>
 		<Reference Include="Unity.Collections">
 			<HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Collections.dll</HintPath>

@@ -20,6 +20,8 @@ namespace LobbyImprovements.LANDiscovery
         public int MemberCount;
         public int MaxMembers;
         public bool IsChallengeMoon;
+        public bool IsSecure;
+        public bool IsPasswordProtected;
     }
 
     public class ClientDiscovery : MonoBehaviour
@@ -91,7 +93,8 @@ namespace LobbyImprovements.LANDiscovery
             }
             catch (Exception ex)
             {
-                PluginLoader.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
+                if (ex.Message != "A blocking operation was interrupted by a call to WSACancelBlockingCall.")
+                    PluginLoader.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
             }
         }
 

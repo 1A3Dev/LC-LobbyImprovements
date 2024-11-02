@@ -5,33 +5,51 @@
 [![Discord](https://img.shields.io/discord/646323142737788928?style=for-the-badge&logo=discord&logoColor=white&label=Discord)](https://discord.gg/CKqVFPRtKp)
 [![Ko-fi](https://img.shields.io/badge/Donate-F16061.svg?style=for-the-badge&logo=ko-fi&logoColor=white&label=Ko-fi)](https://ko-fi.com/K3K8SOM8U)
 
+> If you are using MoreCompany alongside this mod please ensure you are using MoreCompany v1.11.0 or newer!
+
 ### Information
 
 This mod adds various features relating to lobbies:
 
-- Invite Only Lobbies
 - LAN Improvements
-  - Ability to change the port in-case the default (7777) isn't available
+  - Added ability to change the port in-case the default (7777) isn't available
   - Added a lobby list ([Screenshot](https://i.gyazo.com/a84d8057da4d3b48856a66b073df7c97.png))
     - You can directly connect to an IP via the tag input above the lobby list (the port is optional and can be specified after a colon for example: 127.0.0.1:7777)
     - This uses UDP to discover other lobbies on your local network
-    - Ability to sort by lobby name or player count
     - Support for challenge moon and specifying a lobby tag
     - This is compatible with late joining mods such as LobbyControl
-- Lobby Codes
+  - Added ability to set your player name
+    - Only people who have this mod will be able to see the usernames
+  - Added an option to "Validate Clients"
+    - This is currently only used to ban players
+- Lobby Codes/IDs
   - You can copy your current lobby's id via the option on the pause menu
   - You can copy a lobby id from the lobby list using the "Copy ID" button
   - You can join a lobby via the id by putting it into the tag input above the lobby list
+- Lobby Hosting Changes
+  - Added a warning when trying to host a lobby where the name contains a word that is blacklisted in vanilla
+  - Added the ability to restrict joining a lobby with a password
+  - Made lobbies be automatically sorted by the player count
 - Lobby Name Filter Customisation
   - You can modify the blocked terms
 - Steam Improvements
+  - Added option to set the lobby as invite only
   - "Recently Played With" Integration ([Screenshot](https://i.gyazo.com/02fc2fce3599a737a54376f2fa22f49d.png))
     - This enables the steam "recently played with" integration which allows you to view the list of people you have recently played with. You can access the list by opening steam then clicking View > Players. ([Screenshot](https://i.imgur.com/Mzdrgjt.png))
-  - Added a button to sort the lobby list by player count
+  - Added an option to "Validate Steam Sessions"
+    - This validates [steam session tickets](https://partner.steamgames.com/doc/features/auth) to prevent people from spoofing their steam id when joining the lobby
 - Lobby name and player count in the pause menu ([Screenshot](https://i.gyazo.com/c1d9be655f692be2a898b31c1e7e332a.png))
 - Ban Confirmation Prompt Changes ([Screenshot](https://i.gyazo.com/9a51859c98bfa506d1dc94f5fa017217.png))
   - Added an option to the ban prompt to kick the player
   - Added an option to the ban prompt to specify a custom reason
+
+### Vanilla Compatibility
+
+Using some features will make the lobby will only be joinable by people who have this mod:
+
+- Password Protection
+- Steam: Validate Steam Sessions
+- LAN: Validate Clients
 
 ### Support
 
