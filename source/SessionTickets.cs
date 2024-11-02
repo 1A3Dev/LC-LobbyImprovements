@@ -198,7 +198,7 @@ namespace LobbyImprovements
                     }
 
                     QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
-                    if (quickMenuManager)
+                    if (quickMenuManager && playerClientId < quickMenuManager.playerListSlots.Length)
                         quickMenuManager.playerListSlots[playerClientId].usernameHeader.text = text2;
                     StartOfRound.Instance.mapScreen.radarTargets[playerClientId].name = text2;
                 }
@@ -212,21 +212,24 @@ namespace LobbyImprovements
             {
                 // [Steam] Update Profile Icon
                 QuickMenuManager quickMenuManager = Object.FindFirstObjectByType<QuickMenuManager>();
-                PlayerListSlot playerSlot = quickMenuManager?.playerListSlots[playerClientId];
-                if (playerSlot != null)
+                if (playerClientId < quickMenuManager.playerListSlots.Length)
                 {
                     Color targetColor = profileIconColor != Color.clear ? profileIconColor : Color.clear;
-                    if (playerInfo.authResult1 == LIMinimalAuthResult.OK && playerInfo.authResult2 == LIMinimalAuthResult.OK)
+                    if (playerInfo.authResult1 == LIMinimalAuthResult.OK &&
+                        playerInfo.authResult2 == LIMinimalAuthResult.OK)
                     {
                         targetColor = new Color(0f, 0.5f, 0.3f, 1f);
                     }
-                    else if (playerInfo.authResult1 == LIMinimalAuthResult.Invalid || playerInfo.authResult2 == LIMinimalAuthResult.Invalid)
+                    else if (playerInfo.authResult1 == LIMinimalAuthResult.Invalid ||
+                             playerInfo.authResult2 == LIMinimalAuthResult.Invalid)
                     {
                         targetColor = Color.red;
                     }
 
                     if (targetColor != Color.clear)
                     {
+                        PlayerListSlot playerSlot = quickMenuManager.playerListSlots[playerClientId];
+                        
                         //Image profileIconNameBtn = playerSlot?.slotContainer?.transform?.Find("PlayerNameButton")?.GetComponent<Image>();
                         //if (profileIconNameBtn)
                         //{
@@ -236,7 +239,8 @@ namespace LobbyImprovements
                         //    profileIconNameBtn.color = targetColor;
                         //}
 
-                        Image profileIconImg = playerSlot?.slotContainer?.transform?.Find("ProfileIcon")?.GetComponent<Image>();
+                        Image profileIconImg = playerSlot?.slotContainer?.transform?.Find("ProfileIcon")
+                            ?.GetComponent<Image>();
                         if (profileIconImg)
                         {
                             if (profileIconColor == Color.clear)
