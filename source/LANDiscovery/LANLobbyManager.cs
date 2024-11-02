@@ -61,11 +61,11 @@ namespace LobbyImprovements.LANDiscovery
                 {
                     GameObject lanPlayerNameObj = GameObject.Instantiate(__instance.serverTagInputField.gameObject, __instance.serverTagInputField.transform.parent);
                     lanPlayerNameObj.name = "PlayerNameInputField";
-                    lanPlayerNameObj.transform.localPosition = new Vector3(225f, 211.142f, 0f);
+                    lanPlayerNameObj.transform.localPosition = new Vector3(225f, lanPlayerNameObj.transform.localPosition.y, lanPlayerNameObj.transform.localPosition.z);
                     lanPlayerNameField = lanPlayerNameObj.GetComponent<TMP_InputField>();
                     lanPlayerNameField.characterLimit = 32;
                     lanPlayerNameField.characterValidation = TMP_InputField.CharacterValidation.Alphanumeric;
-                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Choose a username";
+                    lanPlayerNameField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Nameless";
                     lanPlayerNameField.onEndEdit = new TMP_InputField.SubmitEvent();
                     lanPlayerNameField.onEndEdit.AddListener(s =>
                     {
