@@ -21,8 +21,8 @@
 
     <ItemGroup>
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="BepInEx.Core" Version="5.*" />
         <PackageReference Include="UnityEngine.Modules" Version="2023.2.4" IncludeAssets="compile" />
@@ -49,8 +49,11 @@
 		<Reference Include="Unity.Collections">
 			<HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Collections.dll</HintPath>
 		</Reference>
-        <Reference Include="Unity.Netcode.Runtime">
+        <Reference Include="Unity.Netcode.Runtime" Publicize="true">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Netcode.Runtime.dll</HintPath>
+        </Reference>
+        <Reference Include="Unity.Networking.Transport">
+            <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Networking.Transport.dll</HintPath>
         </Reference>
         <Reference Include="Unity.TextMeshPro">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.TextMeshPro.dll</HintPath>
