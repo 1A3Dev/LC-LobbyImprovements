@@ -25,9 +25,10 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="BepInEx.Core" Version="5.*" />
-        <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" PrivateAssets="All" IncludeAssets="compile" />
+        <PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" />
         <PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.*" PrivateAssets="all" />
         <PackageReference Include="MaxWasUnavailable.LethalModDataLib" Version="1.*" PrivateAssets="all" />
+        <PackageReference Include="notnotnotswipez-MoreCompany" Version="1.11.0" />
     </ItemGroup>
 
     <ItemGroup Condition="$(CI) != 'true'">
@@ -70,13 +71,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="$(CI) == 'true'">
-        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="MoreCompany">
-            <HintPath>../deps/MoreCompany.dll</HintPath>
-        </Reference>
+        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" Publicize="true" />
     </ItemGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
