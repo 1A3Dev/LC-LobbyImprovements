@@ -13,14 +13,14 @@ using BepInEx.Logging;
 using HarmonyLib;
 using LethalModDataLib.Attributes;
 using LethalModDataLib.Enums;
-using Netcode.Transports.Facepunch;
 using Steamworks;
 using Steamworks.Data;
 using TMPro;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.UI;
-using Color = UnityEngine.Color;
 using Object = UnityEngine.Object;
 
 namespace LobbyImprovements
@@ -47,6 +47,7 @@ namespace LobbyImprovements
 
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
+        public static ConfigEntry<bool> lanIPv4Enabled;
         public static ConfigEntry<bool> lanIPv6Enabled;
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
@@ -136,9 +137,10 @@ namespace LobbyImprovements
             UpdateLobbyNameFilter();
 
             AcceptableValueRange<int> acceptablePortRange = new AcceptableValueRange<int>(1, 65535);
-            lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a lobby", acceptablePortRange));
+            lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a server", acceptablePortRange));
             lanDiscoveryPort = StaticConfig.Bind("LAN", "Discovery Port", 47777, new ConfigDescription("The port used for lobby discovery", acceptablePortRange));
-            lanIPv6Enabled = StaticConfig.Bind("LAN", "IPv6", false, "Should lobbies you host listen for IPv6 connections instead of IPv4?");
+            lanIPv4Enabled = StaticConfig.Bind("LAN", "IPv4", true, "If IPv6 is enabled should the server still listen for IPv4 connections?");
+            lanIPv6Enabled = StaticConfig.Bind("LAN", "IPv6", false, "Should the server listen for IPv6 connections instead of IPv4?");
 
             Assembly patches = Assembly.GetExecutingAssembly();
             harmony.PatchAll(patches);
@@ -683,6 +685,61 @@ namespace LobbyImprovements
             {
                 __instance.WithLower("maxplayers", 5);
             }
+        }
+        
+        [HarmonyPatch(typeof(UnityTransport), "ServerBindAndListen")]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        public static bool ServerBindAndListen(UnityTransport __instance, NetworkEndPoint endPoint, ref bool __result)
+        {
+            if (!PluginLoader.lanIPv6Enabled.Value) return true; // Only override original if IPv6 is enabled
+            
+            string serverListenAddress = __instance.ConnectionData.ServerListenAddress;
+            if (serverListenAddress != "127.0.0.1" && serverListenAddress != "0.0.0.0") return true;
+            
+            if (endPoint.Family == NetworkFamily.Invalid) return true;
+            __instance.InitDriver();
+            bool boundToAny = false;
+            // IPv4
+            if (PluginLoader.lanIPv4Enabled.Value)
+            {
+                if (__instance.m_Driver.Bind(endPoint) != 0)
+                {
+                    PluginLoader.StaticLogger.LogError(
+                        "[IPv4] Server failed to bind. This is usually caused by another process being bound to the same port.");
+                }
+                else
+                {
+                    boundToAny = true;
+                    PluginLoader.StaticLogger.LogInfo("[IPv4] Server bind successful.");
+                }
+            }
+
+            // IPv6
+            NetworkEndPoint ipv6EndPoint = NetworkEndPoint.Parse(serverListenAddress == "127.0.0.1" ? "::1" : "::", endPoint.Port, NetworkFamily.Ipv6);
+            if (__instance.m_Driver.Bind(ipv6EndPoint) != 0)
+            {
+                PluginLoader.StaticLogger.LogError("[IPv6] Server failed to bind. This is usually caused by another process being bound to the same port.");
+            }
+            else
+            {
+                boundToAny = true;
+                PluginLoader.StaticLogger.LogInfo("[IPv6] Server bind successful.");
+            }
+            if (!boundToAny)
+            {
+                __result = false;
+                return false;
+            }
+            if (__instance.m_Driver.Listen() != 0)
+            {
+                Debug.LogError("Server failed to listen.");
+                __result = false;
+                return false;
+            }
+            __instance.m_State = UnityTransport.State.Listening;
+            __result = true;
+            return false;
         }
     }
 
