@@ -108,11 +108,12 @@ namespace LobbyImprovements.LANDiscovery
                 {
                     if (NetworkManager.Singleton.IsServer)
                     {
+                        string serverListenAddress = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
                         if (PluginLoader.setInviteOnly)
                         {
                             PluginLoader.setInviteOnly = false;
                         }
-                        else if (NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress != "127.0.0.1")
+                        else if (serverListenAddress != "127.0.0.1" && serverListenAddress != "::1")
                         {
                             if (!serverDiscovery)
                             {

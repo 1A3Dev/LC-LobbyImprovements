@@ -47,6 +47,7 @@ namespace LobbyImprovements
 
         public static ConfigEntry<int> lanDefaultPort;
         public static ConfigEntry<int> lanDiscoveryPort;
+        public static ConfigEntry<bool> lanIPv6Enabled;
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static string lanPlayerName { get; set; } = "PlayerName";
@@ -137,6 +138,7 @@ namespace LobbyImprovements
             AcceptableValueRange<int> acceptablePortRange = new AcceptableValueRange<int>(1, 65535);
             lanDefaultPort = StaticConfig.Bind("LAN", "Default Port", 7777, new ConfigDescription("The port used for hosting a lobby", acceptablePortRange));
             lanDiscoveryPort = StaticConfig.Bind("LAN", "Discovery Port", 47777, new ConfigDescription("The port used for lobby discovery", acceptablePortRange));
+            lanIPv6Enabled = StaticConfig.Bind("LAN", "IPv6", false, "Should lobbies you host listen for IPv6 connections instead of IPv4?");
 
             Assembly patches = Assembly.GetExecutingAssembly();
             harmony.PatchAll(patches);
@@ -178,9 +180,15 @@ namespace LobbyImprovements
             {
                 GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
                 if (GameNetworkManager.Instance.disableSteam)
+                {
                     __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or ip...";
+                    if (__instance.serverTagInputField.characterLimit < 55)
+                        __instance.serverTagInputField.characterLimit = 55;
+                }
                 else
+                {
                     __instance.serverTagInputField.placeholder.gameObject.GetComponent<TextMeshProUGUI>().text = "Enter tag or id...";
+                }
             }
 
             if (__instance.levelListContainer && !__instance.levelListContainer.gameObject.GetComponentInChildren<ContentSizeFitter>())

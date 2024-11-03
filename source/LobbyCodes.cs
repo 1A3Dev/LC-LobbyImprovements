@@ -106,26 +106,39 @@ namespace LobbyImprovements
             ipAddress = null;
             port = 0;
 
-            string[] parts = input.Split(':');
-            if (parts.Length > 2)
+            // Remove zone index if present
+            int percentIndex = input.IndexOf('%');
+            if (percentIndex != -1)
+            {
+                input = input.Substring(0, percentIndex);
+            }
+            
+            // Check if the input is in a valid IP format without splitting
+            if (IPAddress.TryParse(input, out ipAddress))
+            {
+                return true;
+            }
+
+            // Handle cases where there is no colon or the colon is the last character
+            int lastColonIndex = input.LastIndexOf(':');
+            if (lastColonIndex == -1 || (lastColonIndex == input.Length - 1))
+            {
+                return IPAddress.TryParse(input, out ipAddress);
+            }
+    
+            // Handle potential port
+            string ipPart = input.Substring(0, lastColonIndex);
+            string portPart = input.Substring(lastColonIndex + 1);
+            if (!int.TryParse(portPart, out port) || port < 0 || port > 65535)
             {
                 return false;
             }
 
-            if (!IPAddress.TryParse(parts[0], out ipAddress))
-            {
-                return false;
-            }
+            // Remove brackets for IPv6 address
+            if (ipPart.StartsWith("[") && ipPart.EndsWith("]"))
+                ipPart = ipPart.Trim('[', ']');
 
-            if (parts.Length == 2)
-            {
-                if (!int.TryParse(parts[1], out port) || port < 0 || port > 65535)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return IPAddress.TryParse(ipPart, out ipAddress);
         }
 
         internal static void JoinLobbyByIP(string IP_Address, ushort Port = 0, LANLobby lanLobby = null)
