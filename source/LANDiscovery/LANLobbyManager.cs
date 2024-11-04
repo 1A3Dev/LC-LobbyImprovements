@@ -28,7 +28,7 @@ namespace LobbyImprovements.LANDiscovery
 
         internal static ClientDiscovery clientDiscovery;
 
-        private static bool lanWarningShown = false;
+        private static bool lanWarningShown;
 
         [HarmonyPatch(typeof(MenuManager), "Start")]
         [HarmonyPostfix]
@@ -337,7 +337,7 @@ namespace LobbyImprovements.LANDiscovery
 
                 int entryDetails = -1;
                 GameObject obj = Object.Instantiate(__instance.leaderboardSlotPrefab, __instance.leaderboardSlotsContainer);
-                obj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f + (float)__instance.leaderboardSlotOffset);
+                obj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 0f + __instance.leaderboardSlotOffset);
                 __instance.leaderboardSlotOffset -= 54;
                 obj.GetComponent<ChallengeLeaderboardSlot>().SetSlotValues(GameNetworkManager.Instance.username, 1, __instance.challengeScore, 0, entryDetails);
 
@@ -387,9 +387,9 @@ namespace LobbyImprovements.LANDiscovery
     public class LANLobbyManager_InGame
     {
         public static bool waitingForLobbyDataRefresh;
-        public static LANLobby? currentLobby;
+        public static LANLobby currentLobby;
 
-        public static LANLobby? GetLANLobby()
+        public static LANLobby GetLANLobby()
         {
             if (waitingForLobbyDataRefresh)
                 return null;
