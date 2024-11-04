@@ -49,10 +49,10 @@ namespace LobbyImprovements.Compatibility
             moddedLobbySlot.Setup(lobbySlot);
         }
         
-        [HarmonyPatch(typeof(LobbyHelper), "GetLobbyDiff", new Type[] { typeof(Lobby?), typeof(string) })]
+        [HarmonyPatch(typeof(LobbyHelper), "GetLobbyDiff", new Type[] { typeof(Lobby), typeof(string) })]
         [HarmonyPrefix]
         [HarmonyWrapSafe]
-        private static void GetLobbyDiff(ref string? lobbyPluginString)
+        private static void GetLobbyDiff(ref string lobbyPluginString)
         {
             if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam && lobbyPluginString.IsNullOrWhiteSpace() && LANLobbyManager_InGame.currentLobby != null)
             {
