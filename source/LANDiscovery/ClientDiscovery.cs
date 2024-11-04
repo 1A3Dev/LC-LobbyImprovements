@@ -70,17 +70,15 @@ namespace LobbyImprovements.LANDiscovery
                 cancellationTokenSource.Cancel();
                 await Task.Delay(100); // give the task a chance to cancel
             }
-
-            udpClient?.Dispose();
-            listenPort = PluginLoader.lanDiscoveryPort.Value;
-            udpClient = new UdpClient(listenPort);
-
-            cancellationTokenSource = new CancellationTokenSource();
-            isListening = true;
-            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Started (Target: {targetLobbyIP}:{targetLobbyPort})");
-
+            
             try
             {
+                PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Started (Target: {targetLobbyIP}:{targetLobbyPort})");
+                udpClient?.Dispose();
+                listenPort = PluginLoader.lanDiscoveryPort.Value;
+                udpClient = new UdpClient(listenPort);
+                cancellationTokenSource = new CancellationTokenSource();
+                isListening = true;
                 return await StartListening(targetLobbyIP, targetLobbyPort, discoveryTime, cancellationTokenSource.Token);
             }
             catch (Exception ex)
@@ -89,7 +87,7 @@ namespace LobbyImprovements.LANDiscovery
             }
             finally
             {
-                udpClient.Close();
+                udpClient?.Close();
                 isListening = false;
                 PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Stopped (Target: {targetLobbyIP}:{targetLobbyPort})");
             }
@@ -104,18 +102,16 @@ namespace LobbyImprovements.LANDiscovery
                 cancellationTokenSource.Cancel();
                 await Task.Delay(100); // give the task a chance to cancel
             }
-
-            udpClient?.Dispose();
-            listenPort = PluginLoader.lanDiscoveryPort.Value;
-            udpClient = new UdpClient(listenPort);
-
-            cancellationTokenSource = new CancellationTokenSource();
-            isListening = true;
-            discoveredLobbies.Clear();
-            PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Started");
-
+            
             try
             {
+                PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Started");
+                udpClient?.Dispose();
+                listenPort = PluginLoader.lanDiscoveryPort.Value;
+                udpClient = new UdpClient(listenPort);
+                cancellationTokenSource = new CancellationTokenSource();
+                isListening = true;
+                discoveredLobbies.Clear();
                 await StartListening(null, 0, discoveryTime, cancellationTokenSource.Token);
             }
             catch (Exception ex)
@@ -124,6 +120,7 @@ namespace LobbyImprovements.LANDiscovery
             }
             finally
             {
+                udpClient?.Close();
                 isListening = false;
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Stopped");
             }
