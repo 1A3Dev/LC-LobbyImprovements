@@ -71,11 +71,9 @@ namespace LobbyImprovements.LANDiscovery
                 await Task.Delay(100); // give the task a chance to cancel
             }
 
-            if (udpClient == null || listenPort != PluginLoader.lanDiscoveryPort.Value)
-            {
-                listenPort = PluginLoader.lanDiscoveryPort.Value;
-                udpClient = new UdpClient(listenPort);
-            }
+            udpClient?.Dispose();
+            listenPort = PluginLoader.lanDiscoveryPort.Value;
+            udpClient = new UdpClient(listenPort);
 
             cancellationTokenSource = new CancellationTokenSource();
             isListening = true;
@@ -107,15 +105,13 @@ namespace LobbyImprovements.LANDiscovery
                 await Task.Delay(100); // give the task a chance to cancel
             }
 
-            if (udpClient == null || listenPort != PluginLoader.lanDiscoveryPort.Value)
-            {
-                listenPort = PluginLoader.lanDiscoveryPort.Value;
-                udpClient = new UdpClient(listenPort);
-            }
+            udpClient?.Dispose();
+            listenPort = PluginLoader.lanDiscoveryPort.Value;
+            udpClient = new UdpClient(listenPort);
 
-            discoveredLobbies.Clear();
             cancellationTokenSource = new CancellationTokenSource();
             isListening = true;
+            discoveredLobbies.Clear();
             PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Started");
 
             try

@@ -108,6 +108,8 @@ namespace LobbyImprovements.LANDiscovery
             {
                 Object.Destroy(array[i].gameObject);
             }
+
+            string serverTagInputField = __instance.serverTagInputField.text;
             GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
             LANLobby[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
             currentLobbyList = lobbiesArr;
@@ -115,7 +117,7 @@ namespace LobbyImprovements.LANDiscovery
             {
                 __instance.serverListBlankText.text = "";
                 __instance.lobbySlotPositionOffset = 0f;
-                __instance.loadLobbyListCoroutine = GameNetworkManager.Instance.StartCoroutine(loadLobbyListAndFilter(currentLobbyList, __instance));
+                __instance.loadLobbyListCoroutine = GameNetworkManager.Instance.StartCoroutine(loadLobbyListAndFilter(currentLobbyList, __instance, serverTagInputField));
             }
             else
             {
@@ -123,7 +125,7 @@ namespace LobbyImprovements.LANDiscovery
                 GameNetworkManager.Instance.waitingForLobbyDataRefresh = false;
             }
         }
-        private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance)
+        private static IEnumerator loadLobbyListAndFilter(LANLobby[] lobbyList, SteamLobbyManager __instance, string serverTagInputField)
         {
             __instance.serverListBlankText.gameObject.SetActive(false);
 
@@ -154,7 +156,7 @@ namespace LobbyImprovements.LANDiscovery
                     continue;
                 }
 
-                if (__instance.serverTagInputField.text != string.Empty && __instance.serverTagInputField.text != lobbyList[i].LobbyTag)
+                if (serverTagInputField != string.Empty && serverTagInputField != lobbyList[i].LobbyTag)
                 {
                     continue;
                 }
@@ -390,12 +392,13 @@ namespace LobbyImprovements.LANDiscovery
 
         internal static async void UpdateCurrentLANLobby(LANLobby foundLobby = null, bool reset = false, bool startAClient = false)
         {
+            waitingForLobbyDataRefresh = true;
+            
             if (foundLobby == null)
             {
                 if (LANLobbyManager_LobbyList.clientDiscovery == null)
                     LANLobbyManager_LobbyList.clientDiscovery = new ClientDiscovery();
 
-                waitingForLobbyDataRefresh = true;
                 string lobbyIP = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
                 int lobbyPort = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port;
                 foundLobby = await LANLobbyManager_LobbyList.clientDiscovery.DiscoverSpecificLobbyAsync(lobbyIP, lobbyPort, 2f);
@@ -405,12 +408,13 @@ namespace LobbyImprovements.LANDiscovery
                 GameNetworkManager.Instance.steamLobbyName = currentLobby.LobbyName;
             else
                 GameNetworkManager.Instance.steamLobbyName = "";
-            waitingForLobbyDataRefresh = false;
 
             if (startAClient)
             {
                 GameObject.Find("MenuManager").GetComponent<MenuManager>().StartAClient();
             }
+            
+            waitingForLobbyDataRefresh = false;
         }
 
         internal static void CopyCurrentLobbyCode(TextMeshProUGUI textMesh, string defaultText)
@@ -692,7 +696,7 @@ namespace LobbyImprovements.LANDiscovery
             return true;
         }
 
-        // Block chat whilst the pause menu is open
+        // Block chat whilst the pause menu is open (to allow entering text on the kick/ban prompt)
         [HarmonyPatch(typeof(HUDManager), "EnableChat_performed")]
         [HarmonyPrefix]
         private static bool HM_EnableChat()
