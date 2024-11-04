@@ -22,7 +22,6 @@ namespace LobbyImprovements
             string activePlayerStr = JsonConvert.SerializeObject(new CL_SteamPlayer()
             {
                 actualClientId = sv_playerInfo.actualClientId,
-                steamId = sv_playerInfo.steamId,
                 authResult1 = (int)sv_playerInfo.authResult1 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult1,
                 authResult2 = (int)sv_playerInfo.authResult2 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult2,
             });
@@ -88,7 +87,6 @@ namespace LobbyImprovements
                     activePlayers.Add(new CL_SteamPlayer()
                     {
                         actualClientId = sv_playerInfo.actualClientId,
-                        steamId = sv_playerInfo.steamId,
                         authResult1 = (int)sv_playerInfo.authResult1 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult1,
                         authResult2 = (int)sv_playerInfo.authResult2 >= 1 ? LIMinimalAuthResult.Invalid : (LIMinimalAuthResult)sv_playerInfo.authResult2,
                     });
@@ -332,6 +330,12 @@ namespace LobbyImprovements
                 NetworkManager.Singleton.CustomMessagingManager.RegisterNamedMessageHandler("LI_SV_RequestAllPlayerInfo", SV_RequestAllPlayerInfo);
             }
             PluginLoader.StaticLogger.LogInfo("Registered Named Message Handlers");
+
+            if (GameNetworkManager.Instance.disableSteam)
+            {
+                // Set own name locally for the join message
+                __instance.playerUsername = ParsePlayerName(PluginLoader.lanPlayerName, (int)__instance.playerClientId);
+            }
         }
         
         
@@ -385,7 +389,9 @@ namespace LobbyImprovements
                 var writer = new FastBufferWriter(1, Allocator.Temp);
                 using (writer)
                 {
-                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_SV_RequestAllPlayerInfo", NetworkManager.ServerClientId, writer, NetworkDelivery.Reliable);
+                    NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage("LI_SV_RequestAllPlayerInfo", NetworkManager.ServerClientId, writer, writer.Capacity > 1300
+                        ? NetworkDelivery.ReliableFragmentedSequenced
+                        : NetworkDelivery.Reliable);
                 }
             }
         }
@@ -419,7 +425,7 @@ namespace LobbyImprovements
             }
             else
             {
-                CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId && x.steamId == steamId);
+                CL_SteamPlayer playerInfo = PlayerManager.cl_steamPlayers.Find(x => x.actualClientId == StartOfRound.Instance.allPlayerScripts[playerObjectId].actualClientId);
                 if (playerInfo != null)
                 {
                     UpdatedPlayerInfo(playerInfo);
@@ -458,15 +464,15 @@ namespace LobbyImprovements
                 {
                     PluginLoader.StaticLogger.LogInfo($"[SteamUser.EndAuthSession] {authSession.steamId}");
                     SteamUser.EndAuthSession(authSession.steamId);
-                    //PlayerManager.sv_steamPlayers.Remove(authSession);
+                    PlayerManager.sv_steamPlayers.Remove(authSession);
                 }
             }
             else
             {
-                SV_LANPlayer authSession = PlayerManager.sv_lanPlayers.Find(x => x.actualClientId == clientId);
+                SV_LANPlayer authSession = PlayerManager.sv_lanPlayers.Find(x => x.actualClientId == clientId && !x.banned);
                 if (authSession != null)
                 {
-                    //PlayerManager.sv_lanPlayers.Remove(authSession);
+                    PlayerManager.sv_lanPlayers.Remove(authSession);
                 }
             }
         }

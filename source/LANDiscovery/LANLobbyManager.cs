@@ -11,7 +11,6 @@ using GameNetcodeStuff;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
-using BepInEx.Bootstrap;
 using System;
 using LethalModDataLib.Features;
 using LethalModDataLib.Helpers;
@@ -272,6 +271,8 @@ namespace LobbyImprovements.LANDiscovery
             else
                 __instance.privatePublicDescription.text = "PUBLIC means your game will be visible on the lobby list by anyone on your network.";
             __instance.lanSetAllowRemoteButtonAnimator?.SetBool("isPressed", !PluginLoader.setInviteOnly);
+            if (PluginLoader.lanIPv6Enabled.Value)
+                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress = "::";
         }
 
         [HarmonyPatch(typeof(MenuManager), "LAN_HostSetLocal")]
@@ -281,6 +282,8 @@ namespace LobbyImprovements.LANDiscovery
             __instance.hostSettings_LobbyPublic = false;
             __instance.lobbyTagInputField.gameObject.SetActive(__instance.hostSettings_LobbyPublic);
             __instance.privatePublicDescription.text = "LOCALHOST means your game will only be joinable from your local machine.";
+            if (PluginLoader.lanIPv6Enabled.Value)
+                NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress = "::1";
         }
 
         [HarmonyPatch(typeof(MenuManager), "HostSetLobbyPublic")]
@@ -420,15 +423,20 @@ namespace LobbyImprovements.LANDiscovery
             {
                 if (GameNetworkManager.Instance.isHostingGame)
                 {
-                    lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
-                    if (lobbyId == "0.0.0.0")
+                    string serverListenAddress = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.ServerListenAddress;
+                    if (serverListenAddress == "::" || serverListenAddress == "::1")
                     {
-                        lobbyId = LobbyCodes_LAN.GetGlobalIPAddress();
+                        lobbyId = "[" + (serverListenAddress == "::" ? LobbyCodes_LAN.GetGlobalIPAddress(true) : serverListenAddress) + "]:" + PluginLoader.lanDefaultPort.Value;
+                    }
+                    else
+                    {
+                        lobbyId = (serverListenAddress == "0.0.0.0" ? LobbyCodes_LAN.GetGlobalIPAddress() : serverListenAddress) + ":" + PluginLoader.lanDefaultPort.Value;
                     }
                 }
                 else
                 {
-                    lobbyId = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
+                    string clientAddress = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
+                    lobbyId = (clientAddress.Contains(":") ? "["+clientAddress+"]" : clientAddress)+":"+PluginLoader.lanDefaultPort.Value;
                 }
             }
             else if (GameNetworkManager.Instance != null && GameNetworkManager.Instance.currentLobby.HasValue)

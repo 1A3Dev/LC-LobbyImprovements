@@ -49,7 +49,6 @@ namespace LobbyImprovements
     public class CL_SteamPlayer
     {
         public ulong actualClientId;
-        public SteamId steamId;
         public LIMinimalAuthResult authResult1 = LIMinimalAuthResult.None;
         public LIMinimalAuthResult authResult2 = LIMinimalAuthResult.None;
     }

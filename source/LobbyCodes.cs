@@ -1,13 +1,12 @@
 ﻿using BepInEx;
 using LobbyImprovements.LANDiscovery;
-using Steamworks;
 using Steamworks.Data;
 using System;
 using System.Collections;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -75,15 +74,28 @@ namespace LobbyImprovements
 
     public class LobbyCodes_LAN
     {
-        internal static string GetGlobalIPAddress(bool external = false)
+        internal static string GetGlobalIPAddress(bool IPv6 = false, bool external = false)
         {
-            if (!external)
+            if (!external && !IPv6)
             {
-                return Dns.GetHostEntry(Dns.GetHostName()).AddressList.First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
+                foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (networkInterface.OperationalStatus == OperationalStatus.Up && networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                    {
+                        foreach (var ipInfo in networkInterface.GetIPProperties().UnicastAddresses)
+                        {
+                            if (ipInfo.Address.AddressFamily == (IPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork) && !IPAddress.IsLoopback(ipInfo.Address))
+                            {
+                                return ipInfo.Address.ToString();
+                            }
+                        }
+                    }
+                }
+                return IPv6 ? "::1" : "127.0.0.1";
             }
             
             var ip = "0.0.0.0";
-            var url = "https://api.ipify.org/";
+            var url = IPv6 ? "https://api6.ipify.org/" : "https://api.ipify.org/";
             try
             {
                 WebRequest request = WebRequest.Create(url);
@@ -112,33 +124,48 @@ namespace LobbyImprovements
             {
                 input = input.Substring(0, percentIndex);
             }
-            
-            // Check if the input is in a valid IP format without splitting
-            if (IPAddress.TryParse(input, out ipAddress))
-            {
-                return true;
-            }
 
-            // Handle cases where there is no colon or the colon is the last character
-            int lastColonIndex = input.LastIndexOf(':');
-            if (lastColonIndex == -1 || (lastColonIndex == input.Length - 1))
+            // Check for IPv6 format with brackets (e.g., "[IPv6 Address]:Port")
+            if (input.StartsWith("[") && input.Contains("]"))
             {
-                return IPAddress.TryParse(input, out ipAddress);
+                int closingBracketIndex = input.IndexOf(']');
+                if (closingBracketIndex == -1)
+                    return false;
+
+                string ipPart = input.Substring(1, closingBracketIndex - 1); // IPv6 without brackets
+                string portPart = input.Substring(closingBracketIndex + 1); // Possible port part
+
+                if (portPart.StartsWith(":"))
+                {
+                    portPart = portPart.Substring(1);
+                    if (!int.TryParse(portPart, out port) || port < 0 || port > 65535)
+                    {
+                        return false;
+                    }
+                }
+
+                return IPAddress.TryParse(ipPart, out ipAddress);
             }
-    
-            // Handle potential port
-            string ipPart = input.Substring(0, lastColonIndex);
-            string portPart = input.Substring(lastColonIndex + 1);
-            if (!int.TryParse(portPart, out port) || port < 0 || port > 65535)
+            else
             {
-                return false;
+                int lastColonIndex = input.LastIndexOf(':');
+                if (lastColonIndex == -1)
+                {
+                    // No colon, try parsing as an IP without port
+                    return IPAddress.TryParse(input, out ipAddress);
+                }
+
+                string ipPart = input.Substring(0, lastColonIndex);
+                string portPart = input.Substring(lastColonIndex + 1);
+
+                // Try parsing as IP:Port if port part is a valid integer
+                if (!int.TryParse(portPart, out port) || port < 0 || port > 65535)
+                {
+                    return false;
+                }
+
+                return IPAddress.TryParse(ipPart, out ipAddress);
             }
-
-            // Remove brackets for IPv6 address
-            if (ipPart.StartsWith("[") && ipPart.EndsWith("]"))
-                ipPart = ipPart.Trim('[', ']');
-
-            return IPAddress.TryParse(ipPart, out ipAddress);
         }
 
         internal static void JoinLobbyByIP(string IP_Address, ushort Port = 0, LANLobby lanLobby = null)

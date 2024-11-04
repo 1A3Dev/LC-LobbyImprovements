@@ -50,11 +50,8 @@
 		<Reference Include="Unity.Collections">
 			<HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Collections.dll</HintPath>
 		</Reference>
-        <Reference Include="Unity.Netcode.Runtime" Publicize="true">
+        <Reference Include="Unity.Netcode.Runtime">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Netcode.Runtime.dll</HintPath>
-        </Reference>
-        <Reference Include="Unity.Networking.Transport">
-            <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.Networking.Transport.dll</HintPath>
         </Reference>
         <Reference Include="Unity.TextMeshPro">
             <HintPath>$(LethalCompanyDir)Lethal Company_Data/Managed/Unity.TextMeshPro.dll</HintPath>
@@ -71,7 +68,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="$(CI) == 'true'">
-        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" Publicize="true" />
+        <PackageReference Include="LethalCompany.GameLibs.Steam" Version="*-*" />
     </ItemGroup>
     
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
