@@ -22,6 +22,7 @@ This mod adds various features relating to lobbies:
     - Only people who have this mod will be able to see the usernames
   - Added an option to "Validate Clients"
     - This is currently only used to ban players
+  - Added IPv6 support
 - Lobby Codes/IDs
   - You can copy your current lobby's id via the option on the pause menu
   - You can copy a lobby id from the lobby list using the "Copy ID" button

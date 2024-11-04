@@ -1,3 +1,15 @@
+### 1.0.7
+
+- Fixed the LAN lobby list erroring if you try joining a lobby at the same time as refreshing the list
+- Fixed the chat message when a player joins not showing the custom username on LAN
+- Added basic support for IPv6 in LAN
+  - Please note that the IPv6 address must be surrounded by square brackets.
+  - The toggle for IPv6 is in the config and will prevent players from joining your lobby with your IPv4 address!
+
+### 1.0.6
+
+- Temporary fix for an index out of bounds error that occurs when playing with over 4 players (this is fixed properly in the next MoreCompany update).
+
 ### 1.0.5
 
 - Fixed the lobby list scrollbar being longer than the results
