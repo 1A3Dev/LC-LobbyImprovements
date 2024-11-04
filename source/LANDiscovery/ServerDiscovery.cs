@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using BepInEx.Bootstrap;
 using UnityEngine;
 using HarmonyLib;
+using LobbyImprovements.Compatibility;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
 using static Unity.Netcode.Transports.UTP.UnityTransport;
@@ -37,6 +39,11 @@ namespace LobbyImprovements.LANDiscovery
                 isServerRunning = true;
                 InvokeRepeating("BroadcastServer", 0, 1.0f); // Broadcast every second
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery broadcasting started");
+
+                if (Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+                {
+                    LobbyCompatibility_Compat.SetLANLobbyModData(currentLobby);
+                }
             }
         }
 
@@ -113,7 +120,8 @@ namespace LobbyImprovements.LANDiscovery
                         {
                             PluginLoader.setInviteOnly = false;
                         }
-                        else if (serverListenAddress != "127.0.0.1" && serverListenAddress != "::1")
+                        // else if (serverListenAddress != "127.0.0.1" && serverListenAddress != "::1")
+                        else if (serverListenAddress == "0.0.0.0")
                         {
                             if (!serverDiscovery)
                             {

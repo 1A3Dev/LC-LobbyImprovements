@@ -89,7 +89,7 @@ namespace LobbyImprovements
             }
             else if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
             {
-                try { return Compatibility.MoreCompany.GetMaxPlayers(); } catch { }
+                try { return Compatibility.MoreCompany_Compat.GetMaxPlayers(); } catch { }
             }
 
             return 4;
@@ -146,7 +146,7 @@ namespace LobbyImprovements
 
             if (Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
-                Compatibility.LobbyCompatibility.Init();
+                Compatibility.LobbyCompatibility_Compat.Init(harmony);
             }
         }
 

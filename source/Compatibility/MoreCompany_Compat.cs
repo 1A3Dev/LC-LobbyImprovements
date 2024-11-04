@@ -1,11 +1,11 @@
 ﻿
 namespace LobbyImprovements.Compatibility
 {
-    internal class MoreCompany
+    internal class MoreCompany_Compat
     {
         internal static int GetMaxPlayers()
         {
-            return global::MoreCompany.MainClass.newPlayerCount;
+            return MoreCompany.MainClass.newPlayerCount;
         }
     }
 }
