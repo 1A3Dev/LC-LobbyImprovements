@@ -3,8 +3,8 @@
 - Fixed the LAN lobby list erroring if you try joining a lobby at the same time as refreshing the list
 - Fixed the chat message when a player joins not showing the custom username on LAN
 - Added basic support for IPv6 in LAN
-  - Please note that the IPv6 address must be surrounded by square brackets.
-  - The toggle for IPv6 is in the config and will prevent players from joining your lobby with your IPv4 address!
+  - The toggle for IPv6 is in the config and will prevent players from joining via your IPv4 address if enabled
+  - When trying to join a lobby via an IPv6 address, it must be surrounded by square brackets e.g. `[2001:db8:3333:4444:5555:6666:7777:8888]` or with a port specified `[2001:db8:3333:4444:5555:6666:7777:8888]:7777`
 
 ### 1.0.6
 
