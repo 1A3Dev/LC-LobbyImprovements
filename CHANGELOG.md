@@ -5,6 +5,7 @@
 - Added basic support for IPv6 in LAN
   - The toggle for IPv6 is in the config and will prevent players from joining via your IPv4 address if enabled
   - When trying to join a lobby via an IPv6 address, it must be surrounded by square brackets e.g. `[2001:db8:3333:4444:5555:6666:7777:8888]` or with a port specified `[2001:db8:3333:4444:5555:6666:7777:8888]:7777`
+- Made LobbyCompatibility show the lobby mod list on LAN
 
 ### 1.0.6
 

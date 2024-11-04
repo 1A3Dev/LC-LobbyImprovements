@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BepInEx;
 using HarmonyLib;
+using LobbyCompatibility.Behaviours;
 using LobbyCompatibility.Enums;
 using LobbyCompatibility.Features;
 using LobbyImprovements.LANDiscovery;
@@ -13,6 +15,7 @@ namespace LobbyImprovements.Compatibility
 {
     internal class LobbyCompatibility_Compat
     {
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Init(Harmony harmony)
         {
             PluginLoader.StaticLogger.LogWarning("LobbyCompatibility detected, registering plugin with LobbyCompatibility.");
@@ -31,10 +34,19 @@ namespace LobbyImprovements.Compatibility
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void SetLANLobbyModData(LANLobby lobby)
         {
             // Add plugin metadata to the lobby so clients can check if they have the required plugins
             lobby.Mods = JsonConvert.SerializeObject(PluginHelper.GetAllPluginInfo().ToList(), new VersionConverter());
+        }
+        
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void AddModdedLobbySlotToLobby(LANLobbySlot lobbySlot)
+        {
+            ModdedLobbySlot moddedLobbySlot = lobbySlot.gameObject.AddComponent<ModdedLobbySlot>();
+            moddedLobbySlot._lobbyDiff = LobbyHelper.GetLobbyDiff(null, lobbySlot.thisLobby.Mods);
+            moddedLobbySlot.Setup(lobbySlot);
         }
         
         [HarmonyPatch(typeof(LobbyHelper), "GetLobbyDiff", new Type[] { typeof(Lobby?), typeof(string) })]

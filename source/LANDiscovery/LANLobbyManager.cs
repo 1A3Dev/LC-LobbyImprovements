@@ -12,8 +12,10 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using System;
+using BepInEx.Bootstrap;
 using LethalModDataLib.Features;
 using LethalModDataLib.Helpers;
+using LobbyImprovements.Compatibility;
 
 namespace LobbyImprovements.LANDiscovery
 {
@@ -246,7 +248,12 @@ namespace LobbyImprovements.LANDiscovery
                 }
 
                 componentInChildren.thisLobby = lobbyList[i];
-
+                
+                if (Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+                {
+                    LobbyCompatibility_Compat.AddModdedLobbySlotToLobby(componentInChildren);
+                }
+                
                 yield return null;
             }
 
