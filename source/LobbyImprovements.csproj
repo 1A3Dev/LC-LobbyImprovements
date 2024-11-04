@@ -5,6 +5,7 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+        <Nullable>annotations</Nullable>
     </PropertyGroup>
 
     <PropertyGroup>
