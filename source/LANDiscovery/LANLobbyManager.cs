@@ -90,7 +90,7 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (GameNetworkManager.Instance.waitingForLobbyDataRefresh) return;
 
-            if (!clientDiscovery)
+            if (clientDiscovery == null)
                 clientDiscovery = new ClientDiscovery();
             if (clientDiscovery.isListening) return;
 
@@ -109,7 +109,6 @@ namespace LobbyImprovements.LANDiscovery
                 Object.Destroy(array[i].gameObject);
             }
             GameNetworkManager.Instance.waitingForLobbyDataRefresh = true;
-            clientDiscovery.listenPort = PluginLoader.lanDiscoveryPort.Value;
             LANLobby[] lobbiesArr = (await clientDiscovery.DiscoverLobbiesAsync(2f)).ToArray();
             currentLobbyList = lobbiesArr;
             if (currentLobbyList != null && currentLobbyList.Length != 0)
@@ -393,11 +392,9 @@ namespace LobbyImprovements.LANDiscovery
         {
             if (foundLobby == null)
             {
-                if (!LANLobbyManager_LobbyList.clientDiscovery)
+                if (LANLobbyManager_LobbyList.clientDiscovery == null)
                     LANLobbyManager_LobbyList.clientDiscovery = new ClientDiscovery();
-                if (LANLobbyManager_LobbyList.clientDiscovery.isListening) return;
 
-                LANLobbyManager_LobbyList.clientDiscovery.listenPort = PluginLoader.lanDiscoveryPort.Value;
                 waitingForLobbyDataRefresh = true;
                 string lobbyIP = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Address;
                 int lobbyPort = NetworkManager.Singleton.GetComponent<UnityTransport>().ConnectionData.Port;

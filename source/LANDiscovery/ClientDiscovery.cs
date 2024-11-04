@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -24,78 +24,115 @@ namespace LobbyImprovements.LANDiscovery
         public bool IsPasswordProtected;
     }
 
-    public class ClientDiscovery : MonoBehaviour
+    public class ClientDiscovery
     {
         private UdpClient udpClient;
-        public int listenPort = 47777;
+        private CancellationTokenSource cancellationTokenSource;
+        private int listenPort;
         public bool isListening { get; private set; }
-
         private List<LANLobby> discoveredLobbies = new List<LANLobby>();
 
-        public async Task<List<LANLobby>> DiscoverLobbiesAsync(float discoveryTime)
-        {
-            discoveredLobbies.Clear();
-
-            udpClient = new UdpClient(listenPort);
-            isListening = true;
-            PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery listening started");
-
-            LANLobby foundLobby = null;
-            Task listenTask = Task.Run(() => StartListening(null, 0, ref foundLobby));
-            await Task.Delay(TimeSpan.FromSeconds(discoveryTime));
-
-            isListening = false;
-            udpClient.Close();
-            PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery listening stopped");
-
-            return discoveredLobbies;
-        }
-
-        public async Task<LANLobby> DiscoverSpecificLobbyAsync(string targetLobbyIP, int targetLobbyPort, float discoveryTime)
-        {
-            discoveredLobbies.Clear();
-
-            udpClient = new UdpClient(listenPort);
-            isListening = true;
-            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Server discovery listening started for specific IP. Target: {targetLobbyIP}");
-
-            LANLobby foundLobby = null;
-            Task listenTask = Task.Run(() => StartListening(targetLobbyIP, targetLobbyPort, ref foundLobby));
-            float timePassed = 0f;
-            float pollInterval = 0.1f; // Check every 100 ms if the lobby is found
-            while (timePassed < discoveryTime && foundLobby == null)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(pollInterval));
-                timePassed += pollInterval;
-            }
-
-            isListening = false;
-            udpClient.Close();
-            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Server discovery listening stopped for specific IP. Target: {targetLobbyIP} | Found: {foundLobby != null}");
-
-            return foundLobby;
-        }
-
-        private void StartListening(string targetLobbyIP, int targetLobbyPort, ref LANLobby foundLobby)
+        
+        private async Task<LANLobby> StartListening(string targetLobbyIP, int targetLobbyPort, float maxDiscoveryTime, CancellationToken cancellationToken)
         {
             try
             {
-                while (isListening)
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(maxDiscoveryTime), cancellationToken);
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Any, listenPort);
-                    byte[] data = udpClient.Receive(ref ipEndPoint); // Synchronous receive (non-async here)
-
-                    string message = Encoding.UTF8.GetString(data);
-                    LANLobby tmpLobby = ParseAndStoreLobby(ipEndPoint.Address.ToString(), message, targetLobbyIP, targetLobbyPort);
-                    if (tmpLobby != null)
-                        foundLobby = tmpLobby;
+                    Task<UdpReceiveResult> task = udpClient.ReceiveAsync();
+                    if (await Task.WhenAny(task, timeoutTask) == task)
+                    {
+                        UdpReceiveResult result = await task;
+                        byte[] data = result.Buffer;
+                        string message = Encoding.UTF8.GetString(data);
+                        LANLobby tmpLobby = ParseAndStoreLobby(result.RemoteEndPoint.Address.ToString(), message, targetLobbyIP, targetLobbyPort);
+                        if (tmpLobby != null)
+                            return tmpLobby;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                if (ex.Message != "A blocking operation was interrupted by a call to WSACancelBlockingCall.")
-                    PluginLoader.StaticLogger.LogError("[LAN Discovery] Error receiving UDP broadcast: " + ex.Message);
+                PluginLoader.StaticLogger.LogError("[LAN Discovery] StartListening Error: " + ex.Message);
             }
+            return null;
+        }
+
+        public async Task<LANLobby> DiscoverSpecificLobbyAsync(string targetLobbyIP, int targetLobbyPort, float discoveryTime)
+        {
+            if (isListening)
+            {
+                cancellationTokenSource.Cancel();
+                await Task.Delay(100); // give the task a chance to cancel
+            }
+
+            if (udpClient == null || listenPort != PluginLoader.lanDiscoveryPort.Value)
+            {
+                listenPort = PluginLoader.lanDiscoveryPort.Value;
+                udpClient = new UdpClient(listenPort);
+            }
+
+            cancellationTokenSource = new CancellationTokenSource();
+            isListening = true;
+            PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Started (Target: {targetLobbyIP}:{targetLobbyPort})");
+
+            try
+            {
+                return await StartListening(targetLobbyIP, targetLobbyPort, discoveryTime, cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                PluginLoader.StaticLogger.LogError($"[LAN Discovery] DiscoverSpecificLobbyAsync Error: {ex}");
+            }
+            finally
+            {
+                udpClient.Close();
+                isListening = false;
+                PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Stopped (Target: {targetLobbyIP}:{targetLobbyPort})");
+            }
+
+            return null;
+        }
+        
+        public async Task<List<LANLobby>> DiscoverLobbiesAsync(float discoveryTime)
+        {
+            if (isListening)
+            {
+                cancellationTokenSource.Cancel();
+                await Task.Delay(100); // give the task a chance to cancel
+            }
+
+            if (udpClient == null || listenPort != PluginLoader.lanDiscoveryPort.Value)
+            {
+                listenPort = PluginLoader.lanDiscoveryPort.Value;
+                udpClient = new UdpClient(listenPort);
+            }
+
+            discoveredLobbies.Clear();
+            cancellationTokenSource = new CancellationTokenSource();
+            isListening = true;
+            PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Started");
+
+            try
+            {
+                await StartListening(null, 0, discoveryTime, cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                PluginLoader.StaticLogger.LogError("[LAN Discovery] DiscoverLobbiesAsync Error: " + ex);
+            }
+            finally
+            {
+                isListening = false;
+                PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Stopped");
+            }
+
+            return discoveredLobbies;
         }
 
         private LANLobby ParseAndStoreLobby(string ipAddress, string message, string targetLobbyIP, int targetLobbyPort)
@@ -115,7 +152,7 @@ namespace LobbyImprovements.LANDiscovery
                     LANLobby existingLobby = discoveredLobbies.Find(lobby => lobby.IPAddress == parsedLobby.IPAddress && lobby.Port == parsedLobby.Port);
                     if (existingLobby != null)
                     {
-                        existingLobby = parsedLobby;
+                        existingLobby.MemberCount = parsedLobby.MemberCount;
                         //PluginLoader.StaticLogger.LogDebug($"[LAN Discovery] Updated Lobby: {parsedLobby.LobbyName} at {parsedLobby.IPAddress}:{parsedLobby.Port} with {parsedLobby.MemberCount}/{parsedLobby.MaxMembers} players.");
                     }
                     else
