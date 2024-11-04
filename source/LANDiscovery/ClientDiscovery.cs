@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -26,7 +27,7 @@ namespace LobbyImprovements.LANDiscovery
 
     public class ClientDiscovery
     {
-        private UdpClient udpClient;
+        private Socket socket;
         private CancellationTokenSource cancellationTokenSource;
         private int listenPort;
         public bool isListening { get; private set; }
@@ -40,13 +41,15 @@ namespace LobbyImprovements.LANDiscovery
                 var timeoutTask = Task.Delay(TimeSpan.FromSeconds(maxDiscoveryTime), cancellationToken);
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    Task<UdpReceiveResult> task = udpClient.ReceiveAsync();
+                    byte[] buffer = new byte[1024];
+                    EndPoint endPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+                    var task = socket.ReceiveFromAsync(buffer, SocketFlags.None, endPoint);
                     if (await Task.WhenAny(task, timeoutTask) == task)
                     {
-                        UdpReceiveResult result = await task;
-                        byte[] data = result.Buffer;
+                        SocketReceiveMessageFromResult result = await task;
+                        byte[] data = result.;
                         string message = Encoding.UTF8.GetString(data);
-                        LANLobby tmpLobby = ParseAndStoreLobby(result.RemoteEndPoint.Address.ToString(), message, targetLobbyIP, targetLobbyPort);
+                        LANLobby tmpLobby = ParseAndStoreLobby(result.RemoteEndPoint.Address, message, targetLobbyIP, targetLobbyPort);
                         if (tmpLobby != null)
                             return tmpLobby;
                     }
@@ -74,9 +77,20 @@ namespace LobbyImprovements.LANDiscovery
             try
             {
                 PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Started (Target: {targetLobbyIP}:{targetLobbyPort})");
-                udpClient?.Dispose();
+                socket?.Dispose();
                 listenPort = PluginLoader.lanDiscoveryPort.Value;
-                udpClient = new UdpClient(listenPort);
+                if (PluginLoader.lanIPv6Enabled.Value)
+                {
+                    socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.IPv6Any, listenPort));
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastLoopback, true);
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, new IPv6MulticastOption(IPAddress.Parse("ff02::1")));
+                }
+                else
+                {
+                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.Any, listenPort));
+                }
                 cancellationTokenSource = new CancellationTokenSource();
                 isListening = true;
                 return await StartListening(targetLobbyIP, targetLobbyPort, discoveryTime, cancellationTokenSource.Token);
@@ -87,7 +101,7 @@ namespace LobbyImprovements.LANDiscovery
             }
             finally
             {
-                udpClient?.Close();
+                socket?.Close();
                 isListening = false;
                 PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] DiscoverSpecificLobbyAsync Stopped (Target: {targetLobbyIP}:{targetLobbyPort})");
             }
@@ -106,9 +120,20 @@ namespace LobbyImprovements.LANDiscovery
             try
             {
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Started");
-                udpClient?.Dispose();
+                socket?.Dispose();
                 listenPort = PluginLoader.lanDiscoveryPort.Value;
-                udpClient = new UdpClient(listenPort);
+                if (PluginLoader.lanIPv6Enabled.Value)
+                {
+                    socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.IPv6Any, listenPort));
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastLoopback, true);
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, new IPv6MulticastOption(IPAddress.Parse("ff02::1")));
+                }
+                else
+                {
+                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.Any, listenPort));
+                }
                 cancellationTokenSource = new CancellationTokenSource();
                 isListening = true;
                 discoveredLobbies.Clear();
@@ -120,7 +145,7 @@ namespace LobbyImprovements.LANDiscovery
             }
             finally
             {
-                udpClient?.Close();
+                socket?.Close();
                 isListening = false;
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] DiscoverLobbiesAsync Stopped");
             }
@@ -128,14 +153,14 @@ namespace LobbyImprovements.LANDiscovery
             return discoveredLobbies;
         }
 
-        private LANLobby ParseAndStoreLobby(string ipAddress, string message, string targetLobbyIP, int targetLobbyPort)
+        private LANLobby ParseAndStoreLobby(IPAddress ipAddress, string message, string targetLobbyIP, int targetLobbyPort)
         {
             try
             {
                 LANLobby parsedLobby = JsonUtility.FromJson<LANLobby>(message);
                 if (parsedLobby != null && parsedLobby.GameId == LANLobbyManager_LobbyList.DiscoveryKey && parsedLobby.GameVersion == GameNetworkManager.Instance.gameVersionNum.ToString())
                 {
-                    parsedLobby.IPAddress = ipAddress;
+                    parsedLobby.IPAddress = ipAddress.ToString();
 
                     if (targetLobbyIP != null)
                     {
@@ -151,7 +176,8 @@ namespace LobbyImprovements.LANDiscovery
                     else
                     {
                         discoveredLobbies.Add(parsedLobby);
-                        PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Discovered Lobby: {parsedLobby.LobbyName} at {parsedLobby.IPAddress}:{parsedLobby.Port} with {parsedLobby.MemberCount}/{parsedLobby.MaxMembers} players.");
+                        string isIPv6 = ipAddress.AddressFamily == AddressFamily.InterNetworkV6 ? "IPv6" : "IPv4";
+                        PluginLoader.StaticLogger.LogInfo($"[LAN Discovery] Discovered {isIPv6} Lobby: {parsedLobby.LobbyName} at {parsedLobby.IPAddress}:{parsedLobby.Port} with {parsedLobby.MemberCount}/{parsedLobby.MaxMembers} players.");
                     }
                 }
             }

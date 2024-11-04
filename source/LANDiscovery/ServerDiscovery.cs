@@ -6,12 +6,13 @@ using HarmonyLib;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
 using static Unity.Netcode.Transports.UTP.UnityTransport;
+using ProtocolType = System.Net.Sockets.ProtocolType;
 
 namespace LobbyImprovements.LANDiscovery
 {
     public class ServerDiscovery : MonoBehaviour
     {
-        private UdpClient udpClient;
+        private Socket socket;
         public bool isServerRunning { get; private set; }
         private static LANLobby currentLobby = new LANLobby();
 
@@ -33,7 +34,18 @@ namespace LobbyImprovements.LANDiscovery
                 };
                 LANLobbyManager_InGame.UpdateCurrentLANLobby(currentLobby);
 
-                udpClient = new UdpClient();
+                if (PluginLoader.lanIPv6Enabled.Value)
+                {
+                    socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.IPv6Any, PluginLoader.lanDiscoveryPort.Value));
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastLoopback, true);
+                    socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, new IPv6MulticastOption(IPAddress.Parse("ff02::1")));
+                }
+                else
+                {
+                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    socket.Bind(new IPEndPoint(IPAddress.Any, PluginLoader.lanDiscoveryPort.Value));
+                }
                 isServerRunning = true;
                 InvokeRepeating("BroadcastServer", 0, 1.0f); // Broadcast every second
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery broadcasting started");
@@ -56,8 +68,8 @@ namespace LobbyImprovements.LANDiscovery
 
             string dataStr = JsonUtility.ToJson(currentLobby);
             byte[] data = Encoding.UTF8.GetBytes(dataStr);
-            IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
-            udpClient.Send(data, data.Length, ipEndPoint);
+            EndPoint endPoint = new IPEndPoint(PluginLoader.lanIPv6Enabled.Value ? IPAddress.Parse("ff02::1") : IPAddress.Broadcast, PluginLoader.lanDiscoveryPort.Value);
+            socket.SendTo(data, data.Length, SocketFlags.None, endPoint);
         }
 
         public void StopServerDiscovery()
@@ -66,7 +78,7 @@ namespace LobbyImprovements.LANDiscovery
             {
                 isServerRunning = false;
                 CancelInvoke("BroadcastServer");
-                udpClient.Close();
+                socket.Close();
                 PluginLoader.StaticLogger.LogInfo("[LAN Discovery] Server discovery broadcasting stopped");
             }
         }
