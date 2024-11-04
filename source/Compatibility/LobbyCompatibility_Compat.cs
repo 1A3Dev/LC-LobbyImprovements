@@ -21,7 +21,14 @@ namespace LobbyImprovements.Compatibility
 
             PluginHelper.RegisterPlugin(MyPluginInfo.PLUGIN_GUID, pluginVersion, CompatibilityLevel.ClientOnly, VersionStrictness.None);
 
-            // harmony.PatchAll(typeof(LobbyCompatibility_Compat));
+            try
+            {
+                harmony.PatchAll(typeof(LobbyCompatibility_Compat));
+            }
+            catch (Exception ex)
+            {
+                PluginLoader.StaticLogger.LogWarning($"LobbyCompatibility Patch Failed: {ex}");
+            }
         }
 
         internal static void SetLANLobbyModData(LANLobby lobby)
@@ -30,9 +37,9 @@ namespace LobbyImprovements.Compatibility
             lobby.Mods = JsonConvert.SerializeObject(PluginHelper.GetAllPluginInfo().ToList(), new VersionConverter());
         }
         
-        // [HarmonyPatch(typeof(LobbyHelper), "GetLobbyDiff", new Type[] { typeof(Lobby?), typeof(string) })]
-        // [HarmonyPrefix]
-        // [HarmonyWrapSafe]
+        [HarmonyPatch(typeof(LobbyHelper), "GetLobbyDiff", new Type[] { typeof(Lobby?), typeof(string) })]
+        [HarmonyPrefix]
+        [HarmonyWrapSafe]
         private static void GetLobbyDiff(ref string? lobbyPluginString)
         {
             if (GameNetworkManager.Instance && GameNetworkManager.Instance.disableSteam && lobbyPluginString.IsNullOrWhiteSpace() && LANLobbyManager_InGame.currentLobby != null)
