@@ -380,9 +380,9 @@ namespace LobbyImprovements.LANDiscovery
     public class LANLobbyManager_InGame
     {
         public static bool waitingForLobbyDataRefresh;
-        public static LANLobby currentLobby;
+        public static LANLobby? currentLobby;
 
-        public static LANLobby GetLANLobby()
+        public static LANLobby? GetLANLobby()
         {
             if (waitingForLobbyDataRefresh)
                 return null;
@@ -390,7 +390,7 @@ namespace LobbyImprovements.LANDiscovery
                 return currentLobby;
         }
 
-        internal static async void UpdateCurrentLANLobby(LANLobby foundLobby = null, bool reset = false, bool startAClient = false)
+        internal static async void UpdateCurrentLANLobby(LANLobby foundLobby, bool reset = false, bool startAClient = false)
         {
             waitingForLobbyDataRefresh = true;
             
