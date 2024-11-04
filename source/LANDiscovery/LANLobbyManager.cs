@@ -525,30 +525,23 @@ namespace LobbyImprovements.LANDiscovery
                         BanButton.onClick = new Button.ButtonClickedEvent();
                         BanButton.onClick.AddListener(() =>
                         {
-                            ulong clientId = 0;
-                            if (!GameNetworkManager.Instance.disableSteam)
-                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
-                            else
-                                clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].actualClientId;
-
                             string reasonSafe = SafeRichText(kickReasonInput?.text);
                             string fullBanReason = General_Patches.banPrefixStr + (string.IsNullOrWhiteSpace(reasonSafe) ? "No Reason Specified" : reasonSafe);
-                            General_Patches.kickReason = fullBanReason;
-                            __instance.ConfirmKickUserFromServer();
-                            General_Patches.kickReason = null;
-                            if (kickReasonInput)
-                                kickReasonInput.text = "";
-
+                            
                             if (!GameNetworkManager.Instance.disableSteam)
                             {
+                                ulong clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].playerSteamId;
                                 if (!StartOfRound.Instance.KickedClientIds.Contains(clientId))
+                                {
                                     StartOfRound.Instance.KickedClientIds.Add(clientId);
+                                }
 
                                 General_Patches.steamBanReasons.Remove(clientId);
                                 General_Patches.steamBanReasons.Add(clientId, fullBanReason);
                             }
                             else
                             {
+                                ulong clientId = StartOfRound.Instance.allPlayerScripts[__instance.playerObjToKick].actualClientId;
                                 int lanPlayerIndex = PlayerManager.sv_lanPlayers.FindIndex(x => x.actualClientId == clientId);
                                 if (lanPlayerIndex != -1)
                                 {
@@ -556,6 +549,12 @@ namespace LobbyImprovements.LANDiscovery
                                     PlayerManager.sv_lanPlayers[lanPlayerIndex].banReason = fullBanReason;
                                 }
                             }
+                            
+                            General_Patches.kickReason = fullBanReason;
+                            __instance.ConfirmKickUserFromServer();
+                            General_Patches.kickReason = null;
+                            if (kickReasonInput)
+                                kickReasonInput.text = "";
                         });
                     }
 
@@ -579,10 +578,7 @@ namespace LobbyImprovements.LANDiscovery
                                 kickReasonInput.text = "";
 
                             if (!GameNetworkManager.Instance.disableSteam)
-                            {
                                 StartOfRound.Instance.KickedClientIds.Remove(steamId);
-                                General_Patches.steamBanReasons.Remove(steamId);
-                            }
                         });
                     }
                     if (KickButtonObj)
