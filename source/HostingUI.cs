@@ -366,7 +366,7 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
-            string tmpPassword = hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
+            string tmpPassword = hostPanel?.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
             if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
                 bool hasDefaultTag = string.IsNullOrEmpty(__instance.lobbyTagInputField.text) || __instance.lobbyTagInputField.text == "none";
@@ -408,7 +408,7 @@ namespace LobbyImprovements
             {
                 if (!__instance.menuNotification.transform.Find("Panel/ServerPasswordField"))
                 {
-                    GameObject tmpField = GameObject.Instantiate(hostPanel.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
+                    GameObject tmpField = GameObject.Instantiate(hostPanel?.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
                     tmpField.name = "ServerPasswordField";
                     tmpField.transform.localPosition = new Vector3(0f, 5f, 0f);
                 }
