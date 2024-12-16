@@ -14,7 +14,7 @@ namespace LobbyImprovements
     [HarmonyPatch]
     public class HostingUI
     {
-        public static GameObject hostPanel = null;
+        public static GameObject hostPanel;
 
         [HarmonyPatch(typeof(MenuManager), "Awake")]
         [HarmonyPostfix]
@@ -150,7 +150,7 @@ namespace LobbyImprovements
                                             __instance.HostSetLobbyPublic(true);
                                             break;
                                         case 2:
-                                            __instance.HostSetLobbyPublic(false);
+                                            __instance.HostSetLobbyPublic();
                                             break;
                                         default:
                                             __instance.HostSetLobbyPublic(true);
@@ -162,11 +162,11 @@ namespace LobbyImprovements
                                     switch (index)
                                     {
                                         case 1:
-                                            __instance.HostSetLobbyPublic(false);
+                                            __instance.HostSetLobbyPublic();
                                             break;
                                         case 2:
                                             PluginLoader.setInviteOnly = true;
-                                            __instance.HostSetLobbyPublic(false);
+                                            __instance.HostSetLobbyPublic();
                                             break;
                                         default:
                                             __instance.HostSetLobbyPublic(true);
@@ -260,82 +260,82 @@ namespace LobbyImprovements
 
 
                     // Lobby List Panel
-                    if (!GameNetworkManager.Instance.disableSteam)
-                    {
-                        GameObject lobbyFilterPopup = GameObject.Instantiate(liPanel.gameObject, GameObject.Find("Canvas/MenuContainer/LobbyList").transform);
-                        lobbyFilterPopup.name = "LIPanel_List";
-                        RectTransform lobbyFilterPopupRect = lobbyFilterPopup.GetComponent<RectTransform>();
-                        lobbyFilterPopupRect.anchorMin = new Vector2(0.5f, 0.5f);
-                        lobbyFilterPopupRect.anchorMax = new Vector2(0.5f, 0.5f);
-                        lobbyFilterPopupRect.pivot = new Vector2(0.5f, 0.5f);
-                        lobbyFilterPopup.transform.localPosition = new Vector3(210f, 0f, 0f);
-                        for (int i = lobbyFilterPopup.transform.childCount - 1; i >= 0; i--)
-                        {
-                            Transform child = lobbyFilterPopup.transform.GetChild(i);
-                            if (child.name != "EnterAName" && child.name != "Darken" && child.name != "Outline")
-                            {
-                                GameObject.Destroy(child.gameObject);
-                            }
-                        }
-
-                        //TODO Remove when improved lobby querying is done
-                        lobbyFilterPopup.SetActive(false);
-
-                        float currentHeight = 65f;
-                        GameObject vanillaToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
-                        vanillaToggleObj.name = "VanillaLobbyToggle";
-                        vanillaToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
-                        currentHeight = currentHeight - 25f;
-                        TextMeshProUGUI vanillaToggleText = vanillaToggleObj.GetComponentInChildren<TextMeshProUGUI>();
-                        vanillaToggleText.text = "Show Vanilla:";
-                        Image vanillaToggleIcon = vanillaToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
-                        Button vanillaToggleBtn = vanillaToggleObj.GetComponentInChildren<Button>();
-                        vanillaToggleBtn.onClick = new Button.ButtonClickedEvent();
-                        //vanillaToggleBtn.onClick.AddListener(() =>
-                        //{
-                        //    PluginLoader.steamLobbyType_Vanilla = !PluginLoader.steamLobbyType_Vanilla;
-                        //    vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
-                        //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Vanilla)));
-                        //});
-                        //vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
-
-                        GameObject ppToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
-                        ppToggleObj.name = "PPLobbyToggle";
-                        ppToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
-                        currentHeight = currentHeight - 25f;
-                        TextMeshProUGUI ppToggleText = ppToggleObj.GetComponentInChildren<TextMeshProUGUI>();
-                        ppToggleText.text = "Show Password Protected:";
-                        Image ppToggleIcon = ppToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
-                        Button ppToggleBtn = ppToggleObj.GetComponentInChildren<Button>();
-                        ppToggleBtn.onClick = new Button.ButtonClickedEvent();
-                        //ppToggleBtn.onClick.AddListener(() =>
-                        //{
-                        //    PluginLoader.steamLobbyType_Password = !PluginLoader.steamLobbyType_Password;
-                        //    ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
-                        //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Password)));
-                        //});
-                        //ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
-
-                        if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
-                        {
-                            GameObject mcToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
-                            mcToggleObj.name = "MCLobbyToggle";
-                            mcToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
-                            currentHeight = currentHeight - 25f;
-                            TextMeshProUGUI mcToggleText = mcToggleObj.GetComponentInChildren<TextMeshProUGUI>();
-                            mcToggleText.text = "Show More Company:";
-                            Image mcToggleIcon = mcToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
-                            Button mcToggleBtn = mcToggleObj.GetComponentInChildren<Button>();
-                            mcToggleBtn.onClick = new Button.ButtonClickedEvent();
-                            //mcToggleBtn.onClick.AddListener(() =>
-                            //{
-                            //    PluginLoader.steamLobbyType_MoreCompany = !PluginLoader.steamLobbyType_MoreCompany;
-                            //    mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
-                            //    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_MoreCompany)));
-                            //});
-                            //mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
-                        }
-                    }
+                    // if (!GameNetworkManager.Instance.disableSteam)
+                    // {
+                    //     GameObject lobbyFilterPopup = GameObject.Instantiate(liPanel.gameObject, GameObject.Find("Canvas/MenuContainer/LobbyList").transform);
+                    //     lobbyFilterPopup.name = "LIPanel_List";
+                    //     RectTransform lobbyFilterPopupRect = lobbyFilterPopup.GetComponent<RectTransform>();
+                    //     lobbyFilterPopupRect.anchorMin = new Vector2(0.5f, 0.5f);
+                    //     lobbyFilterPopupRect.anchorMax = new Vector2(0.5f, 0.5f);
+                    //     lobbyFilterPopupRect.pivot = new Vector2(0.5f, 0.5f);
+                    //     lobbyFilterPopup.transform.localPosition = new Vector3(210f, 0f, 0f);
+                    //     for (int i = lobbyFilterPopup.transform.childCount - 1; i >= 0; i--)
+                    //     {
+                    //         Transform child = lobbyFilterPopup.transform.GetChild(i);
+                    //         if (child.name != "EnterAName" && child.name != "Darken" && child.name != "Outline")
+                    //         {
+                    //             GameObject.Destroy(child.gameObject);
+                    //         }
+                    //     }
+                    //
+                    //     //TODO Remove when improved lobby querying is done
+                    //     lobbyFilterPopup.SetActive(false);
+                    //
+                    //     float currentHeight = 65f;
+                    //     GameObject vanillaToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
+                    //     vanillaToggleObj.name = "VanillaLobbyToggle";
+                    //     vanillaToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
+                    //     currentHeight = currentHeight - 25f;
+                    //     TextMeshProUGUI vanillaToggleText = vanillaToggleObj.GetComponentInChildren<TextMeshProUGUI>();
+                    //     vanillaToggleText.text = "Show Vanilla:";
+                    //     Image vanillaToggleIcon = vanillaToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
+                    //     Button vanillaToggleBtn = vanillaToggleObj.GetComponentInChildren<Button>();
+                    //     vanillaToggleBtn.onClick = new Button.ButtonClickedEvent();
+                    //     vanillaToggleBtn.onClick.AddListener(() =>
+                    //     {
+                    //         PluginLoader.steamLobbyType_Vanilla = !PluginLoader.steamLobbyType_Vanilla;
+                    //         vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
+                    //         SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Vanilla)));
+                    //     });
+                    //     vanillaToggleIcon.enabled = PluginLoader.steamLobbyType_Vanilla;
+                    //
+                    //     GameObject ppToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
+                    //     ppToggleObj.name = "PPLobbyToggle";
+                    //     ppToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
+                    //     currentHeight = currentHeight - 25f;
+                    //     TextMeshProUGUI ppToggleText = ppToggleObj.GetComponentInChildren<TextMeshProUGUI>();
+                    //     ppToggleText.text = "Show Password Protected:";
+                    //     Image ppToggleIcon = ppToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
+                    //     Button ppToggleBtn = ppToggleObj.GetComponentInChildren<Button>();
+                    //     ppToggleBtn.onClick = new Button.ButtonClickedEvent();
+                    //     ppToggleBtn.onClick.AddListener(() =>
+                    //     {
+                    //         PluginLoader.steamLobbyType_Password = !PluginLoader.steamLobbyType_Password;
+                    //         ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
+                    //         SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_Password)));
+                    //     });
+                    //     ppToggleIcon.enabled = PluginLoader.steamLobbyType_Password;
+                    //
+                    //     if (Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
+                    //     {
+                    //         GameObject mcToggleObj = GameObject.Instantiate(liPanel.transform.Find("ServerSecureToggle").gameObject, lobbyFilterPopup.transform);
+                    //         mcToggleObj.name = "MCLobbyToggle";
+                    //         mcToggleObj.transform.localPosition = new Vector3(0f, currentHeight, 0f);
+                    //         currentHeight = currentHeight - 25f;
+                    //         TextMeshProUGUI mcToggleText = mcToggleObj.GetComponentInChildren<TextMeshProUGUI>();
+                    //         mcToggleText.text = "Show More Company:";
+                    //         Image mcToggleIcon = mcToggleObj.transform.Find("Arrow (1)").GetComponentInChildren<Image>();
+                    //         Button mcToggleBtn = mcToggleObj.GetComponentInChildren<Button>();
+                    //         mcToggleBtn.onClick = new Button.ButtonClickedEvent();
+                    //         mcToggleBtn.onClick.AddListener(() =>
+                    //         {
+                    //             PluginLoader.steamLobbyType_MoreCompany = !PluginLoader.steamLobbyType_MoreCompany;
+                    //             mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
+                    //             SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamLobbyType_MoreCompany)));
+                    //         });
+                    //         mcToggleIcon.enabled = PluginLoader.steamLobbyType_MoreCompany;
+                    //     }
+                    // }
                 }
             }
         }
@@ -366,7 +366,7 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static bool MM_ConfirmHostButton(MenuManager __instance)
         {
-            string tmpPassword = hostPanel.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
+            string tmpPassword = hostPanel?.transform.Find("ServerPasswordField")?.gameObject?.GetComponent<TMP_InputField>()?.text;
             if (__instance.hostSettings_LobbyPublic && !PluginLoader.setInviteOnly)
             {
                 bool hasDefaultTag = string.IsNullOrEmpty(__instance.lobbyTagInputField.text) || __instance.lobbyTagInputField.text == "none";
@@ -408,7 +408,7 @@ namespace LobbyImprovements
             {
                 if (!__instance.menuNotification.transform.Find("Panel/ServerPasswordField"))
                 {
-                    GameObject tmpField = GameObject.Instantiate(hostPanel.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
+                    GameObject tmpField = GameObject.Instantiate(hostPanel?.transform.Find("ServerPasswordField")?.gameObject, __instance.menuNotification.transform.Find("Panel"));
                     tmpField.name = "ServerPasswordField";
                     tmpField.transform.localPosition = new Vector3(0f, 5f, 0f);
                 }
