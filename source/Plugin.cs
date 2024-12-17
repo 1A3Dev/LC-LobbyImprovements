@@ -37,6 +37,7 @@ namespace LobbyImprovements
         internal static ConfigFile StaticConfig { get; private set; }
 
         public static ConfigEntry<bool> recentlyPlayedWithOrbit;
+        public static ConfigEntry<bool> lobbySortPlayerCount;
 
         public static ConfigEntry<bool> lobbyNameFilterEnabled;
         public static ConfigEntry<bool> lobbyNameFilterDefaults;
@@ -107,6 +108,7 @@ namespace LobbyImprovements
             StaticConfig = Config;
 
             recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
+            lobbySortPlayerCount = StaticConfig.Bind("Steam", "Sort By Player Count", true, "Should lobbies be sorted by player count?");
 
             lobbyNameFilterEnabled = StaticConfig.Bind("Lobby Names", "Filter Enabled", true, "Should the lobby name filter be enabled?");
             lobbyNameFilterEnabled.SettingChanged += (_, _) =>
@@ -323,23 +325,27 @@ namespace LobbyImprovements
         [HarmonyPrefix]
         private static void loadLobbyListAndFilter_Prefix(ref Lobby[] lobbyList)
         {
-            Array.Sort(lobbyList, (x, y) => {
-                if (x.MemberCount == y.MemberCount)
+            if (PluginLoader.lobbySortPlayerCount.Value)
+            {
+                Array.Sort(lobbyList, (x, y) =>
                 {
-                    if (x.MaxMembers == y.MaxMembers)
+                    if (x.MemberCount == y.MemberCount)
                     {
-                        return x.GetData("name").CompareTo(y.GetData("name"));
+                        if (x.MaxMembers == y.MaxMembers)
+                        {
+                            return x.GetData("name").CompareTo(y.GetData("name"));
+                        }
+                        else
+                        {
+                            return y.MaxMembers - x.MaxMembers;
+                        }
                     }
                     else
                     {
-                        return y.MaxMembers - x.MaxMembers;
+                        return y.MemberCount - x.MemberCount;
                     }
-                }
-                else
-                {
-                    return y.MemberCount - x.MemberCount;
-                }
-            });
+                });
+            }
         }
         [HarmonyPatch(typeof(SteamLobbyManager), "loadLobbyListAndFilter")]
         [HarmonyPostfix]
