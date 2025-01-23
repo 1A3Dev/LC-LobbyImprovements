@@ -51,7 +51,7 @@ namespace LobbyImprovements
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static string lanPlayerName { get; set; } = "PlayerName";
-        
+
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool steamSecureLobby { get; set; } = false;
 
@@ -64,6 +64,9 @@ namespace LobbyImprovements
 
         [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool lanSecureLobby { get; set; } = false;
+
+        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.CurrentSave)]
+        public static string saveFileStatId { get; set; }
 
         public static string lobbyPassword = null;
 
@@ -386,10 +389,10 @@ namespace LobbyImprovements
 
                 if (lobbySlot.thisLobby.GetData("password") == "1")
                     tags.Add("<color=yellow>PASSWORD</color>");
-                
+
                 if (lobbySlot.thisLobby.GetData("li_secure") == "1")
                     tags.Add("<color=green>SECURE</color>");
-                
+
                 GameObject lobbyTagsObj = GameObject.Instantiate(lobbySlot.playerCount.gameObject, lobbySlot.transform);
                 lobbyTagsObj.name = "TagsText";
                 TextMeshProUGUI lobbyTagsText = lobbyTagsObj?.GetComponent<TextMeshProUGUI>();
@@ -454,13 +457,13 @@ namespace LobbyImprovements
 
         private static string parseConnectionData(string[] array)
         {
-            return string.Join(',', array.Select(x => 
+            return string.Join(',', array.Select(x =>
                 x.StartsWith("ticket:") ? $"ticket:{x.Substring(7).Length}" :
                 x.StartsWith("hwid:") ? $"hwid:{x.Substring(5).Length}" :
                 x.StartsWith("password:") ? $"password:{x.Substring(9).Length}" : x
             ));
         }
-        
+
         [HarmonyPatch(typeof(GameNetworkManager), "SetConnectionDataBeforeConnecting")]
         [HarmonyPostfix]
         private static void SetConnectionDataBeforeConnecting(GameNetworkManager __instance)
@@ -509,7 +512,7 @@ namespace LobbyImprovements
                         alreadyReplaced = true;
                     }
                 }
-                
+
                 if (alreadyReplaced)
                     newInstructions.Add(instruction);
             }
