@@ -133,23 +133,27 @@ namespace LobbyImprovements.LANDiscovery
 
             bool anyResults = false;
 
-            Array.Sort(lobbyList, (x, y) => {
-                if (x.MemberCount == y.MemberCount)
+            if (PluginLoader.lobbySortPlayerCount.Value)
+            {
+                Array.Sort(lobbyList, (x, y) =>
                 {
-                    if (x.MaxMembers == y.MaxMembers)
+                    if (x.MemberCount == y.MemberCount)
                     {
-                        return x.LobbyName.CompareTo(y.LobbyName);
+                        if (x.MaxMembers == y.MaxMembers)
+                        {
+                            return x.LobbyName.CompareTo(y.LobbyName);
+                        }
+                        else
+                        {
+                            return y.MaxMembers - x.MaxMembers;
+                        }
                     }
                     else
                     {
-                        return y.MaxMembers - x.MaxMembers;
+                        return y.MemberCount - x.MemberCount;
                     }
-                }
-                else
-                {
-                    return y.MemberCount - x.MemberCount;
-                }
-            });
+                });
+            }
 
             for (int i = 0; i < lobbyList.Length; i++)
             {
