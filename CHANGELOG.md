@@ -1,5 +1,6 @@
 ### 1.0.8
 
+- Added a config option to disable the lobby list sorting by player count
 - Changed the lobby name input character limit to match vanilla (40 chars)
 
 ### 1.0.7
