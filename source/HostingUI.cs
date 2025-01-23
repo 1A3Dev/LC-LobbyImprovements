@@ -97,6 +97,7 @@ namespace LobbyImprovements
                             serverNameObject.name = "ServerNameField";
                             serverNameObject.transform.localPosition = new Vector3(0f, 10f, 0f);
                             serverNameObject.transform.Find("Text Area/Placeholder").GetComponent<TextMeshProUGUI>().text = "Enter a name...";
+                            serverNameObject.GetComponent<TMP_InputField>().characterLimit = 40;
                             __instance.lobbyNameInputField = serverNameObject.GetComponent<TMP_InputField>();
                         }
 
@@ -111,6 +112,7 @@ namespace LobbyImprovements
                             placeholderText.horizontalAlignment = HorizontalAlignmentOptions.Center;
                             serverPasswordObject.transform.Find("Text Area/Text").GetComponent<TextMeshProUGUI>().horizontalAlignment = HorizontalAlignmentOptions.Center;
                             serverPasswordObject.GetComponent<TMP_InputField>().contentType = TMP_InputField.ContentType.Password;
+                            serverPasswordObject.GetComponent<TMP_InputField>().characterLimit = 18;
                         }
                     }
 

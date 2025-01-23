@@ -1,3 +1,7 @@
+### 1.0.8
+
+- Changed the lobby name input character limit to match vanilla (40 chars)
+
 ### 1.0.7
 
 - Fixed the LAN lobby list erroring if you try joining a lobby at the same time as refreshing the list
