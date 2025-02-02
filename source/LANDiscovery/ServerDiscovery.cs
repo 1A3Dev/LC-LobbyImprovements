@@ -7,7 +7,6 @@ using HarmonyLib;
 using LobbyImprovements.Compatibility;
 using Unity.Netcode.Transports.UTP;
 using Unity.Netcode;
-using static Unity.Netcode.Transports.UTP.UnityTransport;
 
 namespace LobbyImprovements.LANDiscovery
 {

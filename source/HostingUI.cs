@@ -455,19 +455,30 @@ namespace LobbyImprovements
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
-        [HarmonyPostfix]
-        private static void SteamMatchmaking_OnLobbyCreated(ref GameNetworkManager __instance, ref Steamworks.Result result, ref Lobby lobby)
+        [HarmonyPrefix]
+        private static void SteamMatchmaking_OnLobbyCreated_Prefix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
         {
+            if (result != Steamworks.Result.OK)
+                return;
+            
+            if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
+                lobby.SetData("password", "1");
+            if (PluginLoader.steamSecureLobby)
+                lobby.SetData("li_secure", "1");
+        }
+        
+        [HarmonyPatch(typeof(GameNetworkManager), "SteamMatchmaking_OnLobbyCreated")]
+        [HarmonyPostfix]
+        private static void SteamMatchmaking_OnLobbyCreated_Postfix(GameNetworkManager __instance, Steamworks.Result result, ref Lobby lobby)
+        {
+            if (result != Steamworks.Result.OK)
+                return;
+            
             if (PluginLoader.setInviteOnly)
             {
                 __instance.lobbyHostSettings.isLobbyPublic = false;
                 lobby.SetPrivate();
             }
-
-            if (!string.IsNullOrWhiteSpace(PluginLoader.lobbyPassword))
-                lobby.SetData("password", "1");
-            if (PluginLoader.steamSecureLobby)
-                lobby.SetData("li_secure", "1");
         }
 
         [HarmonyPatch(typeof(QuickMenuManager), "NonHostPlayerSlotsEnabled")]

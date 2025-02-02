@@ -13,7 +13,6 @@ using BepInEx.Logging;
 using HarmonyLib;
 using LethalModDataLib.Attributes;
 using LethalModDataLib.Enums;
-using Netcode.Transports.Facepunch;
 using Steamworks;
 using Steamworks.Data;
 using TMPro;
@@ -678,17 +677,6 @@ namespace LobbyImprovements
                         }
                     }
                 }
-            }
-        }
-
-        [HarmonyPatch(typeof(Steamworks.Data.LobbyQuery), "ApplyFilters")]
-        [HarmonyPrefix]
-        public static void ApplyFilters_Prefix(ref Steamworks.Data.LobbyQuery __instance)
-        {
-            // Hide MC lobbies with over 4 players if MC isn't loaded
-            if (!Chainloader.PluginInfos.ContainsKey("me.swipez.melonloader.morecompany"))
-            {
-                __instance.WithLower("maxplayers", 5);
             }
         }
     }

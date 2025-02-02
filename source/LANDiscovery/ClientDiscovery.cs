@@ -22,7 +22,9 @@ namespace LobbyImprovements.LANDiscovery
         public bool IsChallengeMoon;
         public bool IsSecure;
         public bool IsPasswordProtected;
-        public string Mods;
+        // LobbyCompatibility Support
+        public string ModPlugins;
+        public string ModRequiredChecksum;
     }
 
     public class ClientDiscovery
