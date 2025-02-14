@@ -1,3 +1,7 @@
+### 1.0.9
+
+- Added support for LobbyCompatibility v1.4.0+
+
 ### 1.0.8
 
 - Added a config option to disable the lobby list sorting by player count
