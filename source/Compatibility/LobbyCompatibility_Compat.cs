@@ -61,7 +61,7 @@ namespace LobbyImprovements.Compatibility
                 { "li_secure", lobby.IsSecure.ToString() },
             });
             
-            var pluginsString = PluginHelper.GetLobbyPluginsMetadata(pluginInfo).ToArray();
+            var pluginsString = LobbyHelper.GetLobbyPluginsMetadata(pluginInfo).ToArray();
             lobby.ModPlugins = pluginsString.Join(delimiter: string.Empty);
 
             lobby.ModRequiredChecksum = PluginHelper.Checksum;
