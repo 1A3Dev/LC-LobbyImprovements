@@ -1,5 +1,6 @@
 ### 1.1.0
 
+- Added support for LobbyCompatibility v1.5.0+
 - Made SetLobbyJoinable not be triggered on game start and disconnect
 
 ### 1.0.9
