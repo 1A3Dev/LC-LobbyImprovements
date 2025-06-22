@@ -93,7 +93,10 @@ namespace LobbyImprovements.LANDiscovery
         [HarmonyPostfix]
         private static void Patch_StopServer()
         {
-            GameNetworkManager.Instance.SetLobbyJoinable(false);
+            if (serverDiscovery && serverDiscovery.isServerRunning)
+            {
+                serverDiscovery.StopServerDiscovery();
+            }
         }
 
         [HarmonyPatch(typeof(GameNetworkManager), "SetLobbyJoinable")]
