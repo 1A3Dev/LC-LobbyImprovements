@@ -432,9 +432,10 @@ namespace LobbyImprovements
             }
         }
 
+        [HarmonyPatch(typeof(GameNetworkManager), "OnLocalClientConnectionDisapproved")]
         [HarmonyPatch(typeof(GameNetworkManager), "StartDisconnect")]
         [HarmonyPrefix]
-        private static void StartDisconnect(GameNetworkManager __instance)
+        private static void LocalClient_StartDisconnect(GameNetworkManager __instance)
         {
             if (!__instance.disableSteam)
             {
