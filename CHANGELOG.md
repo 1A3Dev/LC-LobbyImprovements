@@ -1,3 +1,7 @@
+### 1.1.1
+
+- Possible fix for DuplicateRequest error when using "Validate Steam Sessions"
+
 ### 1.1.0
 
 - Added support for LobbyCompatibility v1.5.0+
