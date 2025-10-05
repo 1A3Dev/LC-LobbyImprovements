@@ -1,3 +1,7 @@
+### 1.1.2
+
+- Re-built for v73
+
 ### 1.1.1
 
 - Possible fix for DuplicateRequest error when using "Validate Steam Sessions"
