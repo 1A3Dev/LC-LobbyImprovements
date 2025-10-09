@@ -469,6 +469,7 @@ namespace LobbyImprovements.LANDiscovery
                 // Fix for billboards showing as Player # with no number in LAN (base game issue)
                 foreach (PlayerControllerB newPlayerScript in StartOfRound.Instance.allPlayerScripts)
                 {
+                    if (!newPlayerScript || !newPlayerScript.usernameBillboardText) continue;
                     newPlayerScript.usernameBillboardText.text = newPlayerScript.playerUsername;
                 }
             }
