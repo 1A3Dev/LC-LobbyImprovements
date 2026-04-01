@@ -67,7 +67,7 @@ You can get support in any the following places:
 
 | Mod Version | Game Version |
 | ----------- | ------------ |
-| v1.1.2      | v73 - v80    |
+| v1.1.3      | v73 - v80    |
 
 ### Compatibility
 
