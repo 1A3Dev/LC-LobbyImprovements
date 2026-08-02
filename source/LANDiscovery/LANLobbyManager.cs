@@ -13,8 +13,6 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using System;
 using BepInEx.Bootstrap;
-using LethalModDataLib.Features;
-using LethalModDataLib.Helpers;
 using LobbyImprovements.Compatibility;
 
 namespace LobbyImprovements.LANDiscovery
@@ -71,7 +69,7 @@ namespace LobbyImprovements.LANDiscovery
                     lanPlayerNameField.onEndEdit.AddListener(s =>
                     {
                         PluginLoader.lanPlayerName = s;
-                        SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.lanPlayerName)));
+                        SaveLoadHandler.Save(nameof(PluginLoader.lanPlayerName), PluginLoader.lanPlayerName);
                     });
                 }
                 lanPlayerNameField.text = PluginLoader.lanPlayerName;

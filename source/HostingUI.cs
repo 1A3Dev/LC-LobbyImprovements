@@ -6,8 +6,6 @@ using UnityEngine.UI;
 using Lobby = Steamworks.Data.Lobby;
 using System.Linq;
 using BepInEx.Bootstrap;
-using LethalModDataLib.Features;
-using LethalModDataLib.Helpers;
 
 namespace LobbyImprovements
 {
@@ -208,13 +206,13 @@ namespace LobbyImprovements
                                 {
                                     PluginLoader.lanSecureLobby = !PluginLoader.lanSecureLobby;
                                     secureToggleIcon.enabled = PluginLoader.lanSecureLobby;
-                                    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.lanSecureLobby)));
+                                    SaveLoadHandler.Save(nameof(PluginLoader.lanSecureLobby), PluginLoader.lanSecureLobby);
                                 }
                                 else
                                 {
                                     PluginLoader.steamSecureLobby = !PluginLoader.steamSecureLobby;
                                     secureToggleIcon.enabled = PluginLoader.steamSecureLobby;
-                                    SaveLoadHandler.SaveData(ModDataHelper.GetModDataKey(typeof(PluginLoader), nameof(PluginLoader.steamSecureLobby)));
+                                    SaveLoadHandler.Save(nameof(PluginLoader.steamSecureLobby), PluginLoader.steamSecureLobby);
                                 }
                             });
                             if (GameNetworkManager.Instance.disableSteam)

@@ -11,8 +11,6 @@ using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using LethalModDataLib.Attributes;
-using LethalModDataLib.Enums;
 using Steamworks;
 using Steamworks.Data;
 using TMPro;
@@ -49,20 +47,14 @@ namespace LobbyImprovements
         public static ConfigEntry<int> lanDiscoveryPort;
         public static ConfigEntry<bool> lanIPv6Enabled;
 
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static string lanPlayerName { get; set; } = "PlayerName";
-        
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
+
         public static bool steamSecureLobby { get; set; } = false;
 
-        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         //public static bool steamLobbyType_Vanilla { get; set; } = true;
-        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         //public static bool steamLobbyType_MoreCompany { get; set; } = true;
-        //[ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         //public static bool steamLobbyType_Password { get; set; } = true;
 
-        [ModData(SaveWhen.Manual, LoadWhen.OnRegister, SaveLocation.GeneralSave)]
         public static bool lanSecureLobby { get; set; } = false;
 
         public static string lobbyPassword = null;
@@ -106,7 +98,16 @@ namespace LobbyImprovements
             Instance = this;
             StaticLogger = Logger;
             StaticConfig = Config;
-            
+
+			try{
+                SaveLoadHandler.SaveFileName = $"{Application.persistentDataPath}/LobbyImprovements.es3";
+                lanPlayerName = SaveLoadHandler.Load(nameof(lanPlayerName), lanPlayerName);
+                steamSecureLobby = SaveLoadHandler.Load(nameof(steamSecureLobby), steamSecureLobby);
+                lanSecureLobby = SaveLoadHandler.Load(nameof(lanSecureLobby), lanSecureLobby);
+            }catch(Exception e){
+                StaticLogger.LogError("Settings Load Failed: " + e);
+            }
+
             lobbySortPlayerCount = StaticConfig.Bind("Lobby List", "Sort By Player Count", true, "Should lobbies be sorted by player count?");
 
             recentlyPlayedWithOrbit = StaticConfig.Bind("Steam", "Recent Players In Orbit", true, "Should players be added to the steam recent players list whilst you are in orbit? Disabling this will only add players once the ship has landed.");
