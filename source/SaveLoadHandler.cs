@@ -2,7 +2,7 @@ namespace LobbyImprovements
 {
     internal static class SaveLoadHandler
     {
-        internal static string SaveFileName = "LobbyImprovements.es3";
+        internal static string SaveFileName = "Mod_LobbyImprovements.es3";
 
         internal static void Save<T>(string key, T value)
         {

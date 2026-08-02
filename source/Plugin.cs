@@ -100,7 +100,7 @@ namespace LobbyImprovements
             StaticConfig = Config;
 
 			try{
-                SaveLoadHandler.SaveFileName = $"{Application.persistentDataPath}/LobbyImprovements.es3";
+                SaveLoadHandler.SaveFileName = $"{Application.persistentDataPath}/Mod_LobbyImprovements.es3";
                 lanPlayerName = SaveLoadHandler.Load(nameof(lanPlayerName), lanPlayerName);
                 steamSecureLobby = SaveLoadHandler.Load(nameof(steamSecureLobby), steamSecureLobby);
                 lanSecureLobby = SaveLoadHandler.Load(nameof(lanSecureLobby), lanSecureLobby);

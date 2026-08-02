@@ -1,3 +1,7 @@
+### 1.1.4
+
+- Removed LethalModDataLib as a dependency
+
 ### 1.1.3
 
 - README now shows which mod version should be used for each game version
