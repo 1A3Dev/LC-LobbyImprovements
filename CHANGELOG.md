@@ -1,3 +1,7 @@
+### 1.1.5
+
+- Fixed LAN specific error
+
 ### 1.1.4
 
 - Removed LethalModDataLib as a dependency

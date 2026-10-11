@@ -12,6 +12,8 @@ namespace LobbyImprovements
         internal static HashSet<ulong> PlayerList = new HashSet<ulong>();
         internal static void SetPlayedWith(ulong[] playerSteamIds, string debugType)
         {
+            if (!GameNetworkManager.Instance || GameNetworkManager.Instance.disableSteam) return;
+
             playerSteamIds = playerSteamIds.Where(x => x != 0f && x != SteamClient.SteamId && (debugType == "generateLevel" || !PlayerList.Contains(x))).ToArray();
             if (playerSteamIds.Length > 0)
             {
